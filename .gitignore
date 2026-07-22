@@ -1,0 +1,26 @@
+node_modules/
+coverage/
+dist/
+logs/
+*.log
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+
+# IDE and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Python virtual environments and caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/

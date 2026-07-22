@@ -1,0 +1,29 @@
+{
+  "name": "bookings-bot",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun --watch src/index.ts",
+    "test": "bun test --pass-with-no-tests",
+    "test:coverage": "bun test --coverage --pass-with-no-tests",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "check": "bun run typecheck && bun run lint && bun run test"
+  },
+  "engines": {
+    "bun": ">=1.2.0"
+  },
+  "dependencies": {
+    "@google/genai": "^2.13.0",
+    "@slack/bolt": "^5.0.0",
+    "pino": "^10.3.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.5",
+    "@types/bun": "^1.3.14",
+    "typescript": "^7.0.2"
+  }
+}
