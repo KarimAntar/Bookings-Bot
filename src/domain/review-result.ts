@@ -19,11 +19,27 @@ export const ReviewResultSchema = z.object({
   mismatches: z.array(z.object({ field: Text, crmValue: Value, bookingValue: Value }).strict()).max(50),
   missingNoteEntries: z.array(Text).max(50), missingEvidence: z.array(Text).max(20), failedRequirements: z.array(Text).max(50),
   flags: z.array(z.string().trim().min(1).max(100)).min(1).max(50),
-}).strict();
+}).strict().superRefine((result, context) => {
+  const safe = result.flags.filter((flag) => flag === "safe_public_summary").length;
+  const unsafe = result.flags.filter((flag) => flag === "unsafe_public_output").length;
+  if (safe + unsafe !== 1 || (unsafe === 1 && result.status !== "needs_human_review")) {
+    context.addIssue({ code: "custom", path: ["flags"], message: "Exactly one valid public-safety flag is required" });
+  }
+  const correctionFindings = result.mismatches.length + result.missingNoteEntries.length + result.missingEvidence.length;
+  if (result.status === "approved" && (correctionFindings > 0 || result.failedRequirements.length > 0)) {
+    context.addIssue({ code: "custom", path: ["status"], message: "Approved results cannot contain adverse findings" });
+  }
+  if (result.status === "correction_required" && (correctionFindings === 0 || result.failedRequirements.length > 0)) {
+    context.addIssue({ code: "custom", path: ["status"], message: "Correction results require correctable findings only" });
+  }
+  if (result.status === "rejected" && result.failedRequirements.length === 0) {
+    context.addIssue({ code: "custom", path: ["status"], message: "Rejected results require a failed requirement" });
+  }
+});
 
 export type ReviewStatus = z.infer<typeof ReviewStatusSchema>;
 export type ReviewResult = z.infer<typeof ReviewResultSchema>;
 
 export function humanReviewFallback(flag: string): ReviewResult {
-  return ReviewResultSchema.parse({ status: "needs_human_review", reasoning: "Automated review could not complete safely.", confidence: 0, evidenceRoles: [], crmFields: {}, bookingFields: {}, campaignRequirements: [], qualificationQuestions: [], notesSummary: { present: false, contentSummary: "Notes could not be verified.", requiredEntriesPresent: false }, mismatches: [], missingNoteEntries: [], missingEvidence: [], failedRequirements: [], flags: [flag] });
+  return ReviewResultSchema.parse({ status: "needs_human_review", reasoning: "Automated review could not complete safely.", confidence: 0, evidenceRoles: [], crmFields: {}, bookingFields: {}, campaignRequirements: [], qualificationQuestions: [], notesSummary: { present: false, contentSummary: "Notes could not be verified.", requiredEntriesPresent: false }, mismatches: [], missingNoteEntries: [], missingEvidence: [], failedRequirements: [], flags: [flag, "safe_public_summary"] });
 }

@@ -23,7 +23,7 @@ export function selectImageFiles(
       throw new Error("Only PNG, JPEG, and WebP images are supported");
     }
     if (typeof file.size === "number" && file.size > maxBytes) {
-      throw new Error(`Image ${file.name ?? file.id} exceeds the size limit`);
+      throw new Error("Image exceeds the size limit");
     }
     if (!(file.url_private_download ?? file.url_private)) {
       throw new Error("Slack image download URL is missing");
@@ -54,7 +54,7 @@ export async function downloadSlackImage(
       total += value.byteLength;
       if (total > maxBytes) {
         await reader.cancel();
-        throw new Error(`Image ${file.name ?? file.id} exceeds the size limit`);
+        throw new Error("Image exceeds the size limit");
       }
       chunks.push(value);
     }

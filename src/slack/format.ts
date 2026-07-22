@@ -6,6 +6,9 @@ const escapeSlack = (value: unknown): string => String(value).replaceAll("&", "&
 const bullets = (heading: string, values: readonly string[]) => values.length ? `\n*${heading}:*\n${values.map((value) => `• ${escapeSlack(value)}`).join("\n")}` : "";
 
 export function formatReviewResult(result: ReviewResult): string {
+  if (!result.flags.includes("safe_public_summary")) {
+    return "<!here> *Booking review: Needs human review*\nAutomated review output could not be shared safely.";
+  }
   const heading = { approved: "Approved", correction_required: "Correction required", needs_human_review: "Needs human review", rejected: "Rejected" }[result.status];
   const mismatches = result.mismatches.map(({ field, crmValue, bookingValue }) => `${field}: CRM is “${String(crmValue)}”; booking is “${String(bookingValue)}”`);
   const mention = result.status === "needs_human_review" ? "<!here> " : "";

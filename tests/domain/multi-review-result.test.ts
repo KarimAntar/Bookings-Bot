@@ -16,7 +16,7 @@ const result = {
   missingNoteEntries: ["Annual sales: 12"],
   missingEvidence: ["Booking notes screenshot"],
   failedRequirements: [],
-  flags: ["correctable"],
+  flags: ["correctable", "safe_public_summary"],
 } as const;
 
 describe("rich ReviewResult", () => {
@@ -37,5 +37,14 @@ describe("rich ReviewResult", () => {
     expect(correction).toContain("firstName");
     expect(correction).not.toContain("<!here>");
     expect(formatReviewResult(ReviewResultSchema.parse({ ...result, status: "needs_human_review" }))).toContain("<!here>");
+  });
+
+  test("requires an exact safe-public contract and falls back without exposing model output", () => {
+    expect(() => ReviewResultSchema.parse({ ...result, flags: ["correctable"] })).toThrow();
+    const unsafe = ReviewResultSchema.parse({ ...result, status: "needs_human_review", flags: ["unsafe_public_output"] });
+    const formatted = formatReviewResult(unsafe);
+    expect(formatted).toContain("could not be shared safely");
+    expect(formatted).not.toContain(result.reasoning);
+    expect(formatted).not.toContain("firstName");
   });
 });

@@ -5,9 +5,11 @@ const file = { id: "F1", mimetype: "image/png", size: 1, url_private_download: "
 test("reviews every top-level image regardless of caption", () => {
   for (const text of ["test", "g2g?", "@here"]) expect(classifyMessage({ type: "message", channel: "C", ts: text, text, files: [file] }, false)).toBe("root");
 });
-test("accepts text or image replies only for active roots", () => {
+test("accepts text, image, and thread broadcast replies only for active roots", () => {
   expect(classifyMessage({ type: "message", channel: "C", ts: "2", thread_ts: "1", text: "Sales are 12" }, true)).toBe("correction");
   expect(classifyMessage({ type: "message", channel: "C", ts: "3", thread_ts: "1", files: [file] }, true)).toBe("correction");
+  expect(classifyMessage({ type: "message", subtype: "thread_broadcast", channel: "C", ts: "3b", thread_ts: "1", text: "Updated details" }, true)).toBe("correction");
+  expect(classifyMessage({ type: "message", subtype: "channel_join", channel: "C", ts: "3c", thread_ts: "1", text: "noise" }, true)).toBe("ignore");
   expect(classifyMessage({ type: "message", channel: "C", ts: "4", thread_ts: "unknown", files: [file] }, false)).toBe("ignore");
 });
 test("ignores edits deletions and bots", () => {

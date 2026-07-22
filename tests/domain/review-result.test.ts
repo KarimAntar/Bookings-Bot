@@ -7,12 +7,12 @@ const valid = {
   confidence: 0.95,
   evidenceRoles: [], crmFields: { guest: "Ada", nights: 3, prepaid: true, note: null }, bookingFields: {},
   campaignRequirements: [], qualificationQuestions: [], notesSummary: { present: true, contentSummary: "Booking notes verified.", requiredEntriesPresent: true }, mismatches: [], missingNoteEntries: [], missingEvidence: [], failedRequirements: [],
-  flags: ["  verified  "],
+  flags: ["  safe_public_summary  "],
 };
 
 describe("ReviewResultSchema", () => {
   test("parses and normalizes a valid review", () => {
-    expect(ReviewResultSchema.parse(valid)).toEqual({ ...valid, reasoning: "Booking details match.", flags: ["verified"] });
+    expect(ReviewResultSchema.parse(valid)).toEqual({ ...valid, reasoning: "Booking details match.", flags: ["safe_public_summary"] });
   });
   test("rejects unknown top-level provider fields", () => expect(() => ReviewResultSchema.parse({ ...valid, providerMetadata: "no" })).toThrow());
   test("rejects confidence outside zero through one", () => expect(() => ReviewResultSchema.parse({ ...valid, confidence: 1.01 })).toThrow());
@@ -22,6 +22,6 @@ describe("ReviewResultSchema", () => {
 test("humanReviewFallback returns a conservative rich result", () => {
   expect(humanReviewFallback("  ai_timeout  ")).toEqual({
     status: "needs_human_review", reasoning: "Automated review could not complete safely.", confidence: 0,
-    evidenceRoles: [], crmFields: {}, bookingFields: {}, campaignRequirements: [], qualificationQuestions: [], notesSummary: { present: false, contentSummary: "Notes could not be verified.", requiredEntriesPresent: false }, mismatches: [], missingNoteEntries: [], missingEvidence: [], failedRequirements: [], flags: ["ai_timeout"],
+    evidenceRoles: [], crmFields: {}, bookingFields: {}, campaignRequirements: [], qualificationQuestions: [], notesSummary: { present: false, contentSummary: "Notes could not be verified.", requiredEntriesPresent: false }, mismatches: [], missingNoteEntries: [], missingEvidence: [], failedRequirements: [], flags: ["ai_timeout", "safe_public_summary"],
   });
 });
