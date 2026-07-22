@@ -10,8 +10,9 @@ from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from dotenv import load_dotenv
 import threading
-from http.server import HTTPServer, BaseHTTPRequestHandler
+import time
 import sys
+import gradio as gr
 
 # Load environment variables
 load_dotenv()
@@ -146,6 +147,7 @@ if app:
 
 def start_slack_bot():
     """Starts the Slack SocketMode handler in a background thread"""
+    time.sleep(2) # Give Gradio a moment to boot
     if app and SLACK_APP_TOKEN:
         try:
             print("Starting Slack SocketMode...")
@@ -155,12 +157,15 @@ def start_slack_bot():
         except Exception as e:
             print(f"Failed to start Slack handler: {e}")
 
-# --- Dummy Web Server (For Hugging Face Spaces Healthcheck) ---
-class HealthCheckHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
+# --- Gradio UI (For Hugging Face Spaces) ---
+
+def create_ui():
+    with gr.Blocks() as demo:
+        gr.Markdown("# 🤖 Bookings QA Bot")
+        gr.Markdown(
+            "This bot is designed to run in the background and listen to Slack via Socket Mode! \n\n"
+            "Drop a screenshot of a booking in your Slack channel, and the bot will review it using Gemini 1.5 Flash."
+        )
         
         missing = []
         if not SLACK_BOT_TOKEN: missing.append("SLACK_BOT_TOKEN")
@@ -168,35 +173,22 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
         if not GEMINI_API_KEY: missing.append("GEMINI_API_KEY")
         
         if missing:
-            message = f"<h1>🔴 ERROR: Missing secrets in Space settings: {', '.join(missing)}</h1>"
+            status_val = f"🔴 ERROR: Missing secrets in Space settings: {', '.join(missing)}"
         else:
-            message = "<h1>🟢 Bot is active and listening to Slack events via Socket Mode!</h1>"
+            status_val = "🟢 Bot is active and listening to Slack events via Socket Mode!"
             
-        html = f"""
-        <html>
-        <head><title>Bookings QA Bot</title></head>
-        <body style="font-family: sans-serif; padding: 2rem;">
-            <h2>🤖 Bookings QA Bot</h2>
-            {message}
-        </body>
-        </html>
-        """
-        self.wfile.write(html.encode('utf-8'))
+        status_text = gr.Textbox(value=status_val, label="System Status", interactive=False)
 
-    # Suppress HTTP logging
-    def log_message(self, format, *args):
-        pass
-
-def run_server():
-    server_address = ('', 7860)
-    httpd = HTTPServer(server_address, HealthCheckHandler)
-    print("Health check server running on port 7860...")
-    httpd.serve_forever()
+    return demo
 
 if __name__ == "__main__":
-    # Start the Slack bot in a background thread
-    slack_thread = threading.Thread(target=start_slack_bot, daemon=True)
-    slack_thread.start()
-    
-    # Launch basic web server on the main thread
-    run_server()
+    # Start the Slack bot in a background thread ONLY if tokens are present
+    if app and SLACK_APP_TOKEN:
+        slack_thread = threading.Thread(target=start_slack_bot, daemon=True)
+        slack_thread.start()
+        print("Booking QA Bot background thread initialized!")
+        sys.stdout.flush()
+
+    # Launch Gradio
+    demo = create_ui()
+    demo.launch(server_name="0.0.0.0", server_port=7860)
