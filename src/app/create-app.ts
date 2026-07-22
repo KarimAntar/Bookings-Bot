@@ -25,7 +25,7 @@ export function createApp(config: AppConfig): App {
     socketMode: true,
     logger: slackLogger,
   });
-  const ruleStore = new RuleStore("data/custom-rules.json");
+  const ruleStore = new RuleStore(config.rulesFilePath);
   const ruleManager = new RuleManager(config.geminiApiKey, config.geminiModel, ruleStore);
   const provider = new GeminiProvider(config.geminiApiKey, config.geminiModel, config.aiTimeoutMs, ruleStore);
   const service = new ReviewService(provider, config.lowConfidenceThreshold, logger);

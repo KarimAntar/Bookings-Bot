@@ -31,6 +31,7 @@ const EnvSchema = z.object({
   LOW_CONFIDENCE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.8),
   LOG_LEVEL: LogLevelSchema.default("info"),
   ADMIN_USER_IDS: z.string().default(""),
+  RULES_FILE_PATH: z.string().default("data/custom-rules.json"),
 });
 
 export interface AppConfig {
@@ -51,6 +52,7 @@ export interface AppConfig {
   readonly lowConfidenceThreshold: number;
   readonly logLevel: z.infer<typeof LogLevelSchema>;
   readonly adminUserIds: ReadonlySet<string>;
+  readonly rulesFilePath: string;
 }
 
 export function parseEnv(env: Record<string, string | undefined>): AppConfig {
@@ -82,5 +84,6 @@ export function parseEnv(env: Record<string, string | undefined>): AppConfig {
         .map((id) => id.trim())
         .filter(Boolean),
     ),
+    rulesFilePath: parsed.RULES_FILE_PATH,
   };
 }

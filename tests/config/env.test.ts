@@ -29,6 +29,7 @@ describe("parseEnv", () => {
       lowConfidenceThreshold: 0.8,
       logLevel: "info",
       adminUserIds: new Set(),
+      rulesFilePath: "data/custom-rules.json",
     });
   });
 

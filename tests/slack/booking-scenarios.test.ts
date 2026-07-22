@@ -86,6 +86,7 @@ describe("Slack booking scenarios (Listener Flow)", () => {
     maxActiveReviews: 10,
     adminUserIds: new Set<string>(),
     activeReviewTtlMs: 60000,
+    rulesFilePath: "data/custom-rules.json",
   };
 
   test("approved matching package flows through listener", async () => {
