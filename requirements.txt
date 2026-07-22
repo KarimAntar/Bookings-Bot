@@ -1,6 +1,4 @@
 slack_bolt
-google-generativeai
-gradio
-huggingface_hub<0.24.0
+google-genai
 python-dotenv
 requests

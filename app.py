@@ -1,18 +1,17 @@
-import warnings
-warnings.filterwarnings("ignore")
-
 import os
-import io
 import json
 import requests
-import google.generativeai as genai
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import sys
+
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from dotenv import load_dotenv
-import threading
-import time
-import sys
-import gradio as gr
+
+# Use the new Google GenAI SDK
+from google import genai
+from google.genai import types
 
 # Load environment variables
 load_dotenv()
@@ -22,7 +21,9 @@ SLACK_APP_TOKEN = os.environ.get("SLACK_APP_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+    ai_client = genai.Client(api_key=GEMINI_API_KEY)
+else:
+    ai_client = None
 
 if SLACK_BOT_TOKEN:
     app = App(token=SLACK_BOT_TOKEN)
@@ -98,24 +99,28 @@ if app:
                 image_data = response.content
                 mime_type = file.get("mimetype", "image/png")
 
-                # Process with Gemini
+                # Process with Gemini using new SDK
                 prompt_text = BOOKING_REVIEW_PROMPT.replace(
                     "{USER_TEXT}",
                     f"User provided context: {user_text}" if user_text else "No additional text provided."
                 )
 
-                # Define the schema
-                generation_config = genai.types.GenerationConfig(
+                config = types.GenerateContentConfig(
                     response_mime_type="application/json"
                 )
+                
+                # We need to construct the payload according to the new SDK
+                # It accepts bytes directly
+                image_part = types.Part.from_bytes(
+                    data=image_data,
+                    mime_type=mime_type,
+                )
 
-                model = genai.GenerativeModel('gemini-1.5-flash', generation_config=generation_config)
-
-                # Send the image and prompt
-                result = model.generate_content([
-                    prompt_text,
-                    {"mime_type": mime_type, "data": image_data}
-                ])
+                result = ai_client.models.generate_content(
+                    model='gemini-1.5-flash',
+                    contents=[prompt_text, image_part],
+                    config=config
+                )
 
                 # Parse JSON
                 try:
@@ -147,7 +152,6 @@ if app:
 
 def start_slack_bot():
     """Starts the Slack SocketMode handler in a background thread"""
-    time.sleep(2) # Give Gradio a moment to boot
     if app and SLACK_APP_TOKEN:
         try:
             print("Starting Slack SocketMode...")
@@ -157,15 +161,12 @@ def start_slack_bot():
         except Exception as e:
             print(f"Failed to start Slack handler: {e}")
 
-# --- Gradio UI (For Hugging Face Spaces) ---
-
-def create_ui():
-    with gr.Blocks() as demo:
-        gr.Markdown("# 🤖 Bookings QA Bot")
-        gr.Markdown(
-            "This bot is designed to run in the background and listen to Slack via Socket Mode! \n\n"
-            "Drop a screenshot of a booking in your Slack channel, and the bot will review it using Gemini 1.5 Flash."
-        )
+# --- Dummy Web Server (For Hugging Face Spaces Healthcheck) ---
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
         
         missing = []
         if not SLACK_BOT_TOKEN: missing.append("SLACK_BOT_TOKEN")
@@ -173,23 +174,36 @@ def create_ui():
         if not GEMINI_API_KEY: missing.append("GEMINI_API_KEY")
         
         if missing:
-            status_val = f"🔴 ERROR: Missing secrets in Space settings: {', '.join(missing)}"
+            message = f"<h1>🔴 ERROR: Missing secrets in Space settings: {', '.join(missing)}</h1>"
         else:
-            status_val = "🟢 Bot is active and listening to Slack events via Socket Mode!"
+            message = "<h1>🟢 Bot is active and listening to Slack events via Socket Mode!</h1>"
             
-        status_text = gr.Textbox(value=status_val, label="System Status", interactive=False)
+        html = f"""
+        <html>
+        <head><title>Bookings QA Bot</title></head>
+        <body style="font-family: sans-serif; padding: 2rem;">
+            <h2>🤖 Bookings QA Bot</h2>
+            {message}
+        </body>
+        </html>
+        """
+        self.wfile.write(html.encode('utf-8'))
 
-    return demo
+    # Suppress HTTP logging
+    def log_message(self, format, *args):
+        pass
+
+def run_server():
+    server_address = ('0.0.0.0', 7860)
+    httpd = HTTPServer(server_address, HealthCheckHandler)
+    print("Health check server running on port 7860...")
+    sys.stdout.flush()
+    httpd.serve_forever()
 
 if __name__ == "__main__":
-    # Start the Slack bot in a background thread ONLY if tokens are present
-    if app and SLACK_APP_TOKEN:
-        slack_thread = threading.Thread(target=start_slack_bot, daemon=True)
-        slack_thread.start()
-        print("Booking QA Bot background thread initialized!")
-        sys.stdout.flush()
-
-    # Launch Gradio
-    demo = create_ui()
-    # Need to remove share=False because Hugging Face actually requires Gradio's internal proxy resolution for its free tier zero-GPU spaces
-    demo.launch(server_name="0.0.0.0", server_port=7860)
+    # Start the Slack bot in a background thread
+    slack_thread = threading.Thread(target=start_slack_bot, daemon=True)
+    slack_thread.start()
+    
+    # Launch basic web server on the main thread
+    run_server()
