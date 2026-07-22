@@ -15,7 +15,13 @@ if [[ ! -f /etc/bookings-bot/bookings-bot.env ]]; then
 fi
 install -d -o bookings-bot -g bookings-bot -m 0750 "$release_root"
 install -d -o bookings-bot -g bookings-bot -m 0750 "$release"
-git -C "$repo_dir" archive HEAD | tar -x -C "$release"
+archive=$(mktemp)
+trap 'rm -f "$archive"' EXIT
+chown bookings-bot:bookings-bot "$archive"
+sudo -u bookings-bot git -C "$repo_dir" archive --format=tar --output="$archive" HEAD
+tar -xf "$archive" -C "$release"
+rm -f "$archive"
+trap - EXIT
 chown -R bookings-bot:bookings-bot "$release"
 sudo -u bookings-bot /usr/local/bin/bun install --frozen-lockfile --cwd "$release" --production
 ln -sfn "$release" /opt/bookings-bot/current
