@@ -18,6 +18,11 @@ interface SlackMessage {
   files?: SlackFile[];
 }
 
+export function isReviewableMessage(message: SlackMessage): boolean {
+  if (message.bot_id || !message.files?.length) return false;
+  return message.subtype === undefined || message.subtype === "file_share";
+}
+
 export function registerMessageListener(
   app: App,
   config: AppConfig,
@@ -29,7 +34,7 @@ export function registerMessageListener(
 
   app.event("message", async ({ event, body, client }) => {
     const message = event as SlackMessage;
-    if (message.subtype || message.bot_id || !message.files?.length) return;
+    if (!isReviewableMessage(message)) return;
     if (config.allowedChannelIds.size && !config.allowedChannelIds.has(message.channel)) return;
     const eventId = "event_id" in body && typeof body.event_id === "string"
       ? body.event_id
