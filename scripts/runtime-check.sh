@@ -3,6 +3,11 @@ set -euo pipefail
 
 node_bin=${1:-node}
 
+if [[ ! -f node_modules/undici/package.json ]]; then
+  printf 'Run this check from an installed application release containing node_modules/undici\n' >&2
+  exit 1
+fi
+
 "$node_bin" -e '
 const major = Number(process.versions.node.split(".")[0]);
 const undici = require("undici");
