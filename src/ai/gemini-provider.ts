@@ -4,6 +4,7 @@ import { BOOKING_REVIEW_POLICY, REVIEW_RESPONSE_SCHEMA } from "./booking-policy"
 import type { ReviewRequest } from "../domain/review-request";
 import { ReviewResultSchema, type ReviewResult } from "../domain/review-result";
 import { withRetry, withTimeout } from "../runtime/retry";
+import type { RuleStore } from "../rules/rule-store";
 
 function statusCode(error: unknown): number | undefined {
   if (typeof error !== "object" || error === null) return undefined;
@@ -31,6 +32,7 @@ export class GeminiProvider implements AIProvider {
     apiKey: string,
     private readonly model: string,
     private readonly timeoutMs: number,
+    private readonly ruleStore?: RuleStore
   ) {
     this.client = new GoogleGenAI({ apiKey });
   }
@@ -38,6 +40,14 @@ export class GeminiProvider implements AIProvider {
   async review(request: ReviewRequest): Promise<ReviewResult> {
     return withRetry(
       () => withTimeout(async (signal) => {
+        let systemInstruction = BOOKING_REVIEW_POLICY;
+        if (this.ruleStore) {
+          const rules = await this.ruleStore.getRules();
+          if (rules.length > 0) {
+            systemInstruction += `\n\n### CUSTOM ADMIN RULES ###\n${rules.map((r, i) => `${i}: ${r}`).join("\n")}`;
+          }
+        }
+
         const response = await this.client.models.generateContent({
           model: this.model,
           contents: [{
@@ -45,7 +55,7 @@ export class GeminiProvider implements AIProvider {
             parts: buildGeminiParts(request),
           }],
           config: {
-            systemInstruction: BOOKING_REVIEW_POLICY,
+            systemInstruction: systemInstruction,
             responseMimeType: "application/json",
             responseJsonSchema: REVIEW_RESPONSE_SCHEMA,
             temperature: 0,

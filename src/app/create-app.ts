@@ -5,6 +5,8 @@ import { createLogger } from "../observability/logger";
 import { ReviewService } from "../reviews/review-service";
 import { registerMessageListener } from "../slack/message-listener";
 import { ReviewThreadStore } from "../slack/review-thread-store";
+import { RuleStore } from "../rules/rule-store";
+import { RuleManager } from "../rules/rule-manager";
 
 export function createApp(config: AppConfig): App {
   const logger = createLogger(config.logLevel);
@@ -23,10 +25,12 @@ export function createApp(config: AppConfig): App {
     socketMode: true,
     logger: slackLogger,
   });
-  const provider = new GeminiProvider(config.geminiApiKey, config.geminiModel, config.aiTimeoutMs);
+  const ruleStore = new RuleStore("data/custom-rules.json");
+  const ruleManager = new RuleManager(config.geminiApiKey, config.geminiModel, ruleStore);
+  const provider = new GeminiProvider(config.geminiApiKey, config.geminiModel, config.aiTimeoutMs, ruleStore);
   const service = new ReviewService(provider, config.lowConfidenceThreshold, logger);
   const reviewThreadStore = new ReviewThreadStore(config.maxActiveReviews, config.activeReviewTtlMs);
-  registerMessageListener(app, config, service, slackLogger, reviewThreadStore);
+  registerMessageListener(app, config, service, slackLogger, reviewThreadStore, ruleManager);
   app.error(async (error) => logger.error({ err: error }, "Unhandled Slack application error"));
   return app;
 }
