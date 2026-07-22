@@ -11,6 +11,7 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 from dotenv import load_dotenv
 import gradio as gr
 import threading
+import time
 
 # Load environment variables
 load_dotenv()
@@ -177,12 +178,13 @@ def create_ui():
     return demo
 
 if __name__ == "__main__":
+    # Launch Gradio on the main thread FIRST
+    demo = create_ui()
+    
     # Start the Slack bot in a background thread only if tokens are present
     if app and SLACK_APP_TOKEN:
         slack_thread = threading.Thread(target=start_slack_bot, daemon=True)
         slack_thread.start()
         print("Booking QA Bot background thread started!")
-
-    # Launch Gradio on the port expected by HF Spaces (7860)
-    demo = create_ui()
+        
     demo.launch(server_name="0.0.0.0", server_port=7860)
