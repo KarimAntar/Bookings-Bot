@@ -17,7 +17,7 @@ Never commit credentials. Rotate Slack and Gemini credentials immediately if exp
 
 ## Local commands
 
-Requires Bun 1.2 or newer.
+Requires Bun 1.2 or newer for installation/building and Node.js 20 or newer for the Slack Socket Mode runtime.
 
 ```bash
 cp .env.example .env
@@ -25,10 +25,11 @@ cp .env.example .env
 bun install --frozen-lockfile
 bun run typecheck
 bun run lint
-bun run start
+bun run build
+node --env-file=.env dist/index.js
 ```
 
-Bun loads `.env` automatically. Socket Mode requires no inbound HTTP port.
+Bun builds the TypeScript application, while Node runs Slack Socket Mode because Slack's WebSocket heartbeat requires an `undici` ping API that Bun does not currently expose. Socket Mode requires no inbound HTTP port.
 
 ## Google Compute Engine e2-micro
 

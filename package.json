@@ -3,8 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "bun run src/index.ts",
+    "start": "node dist/index.js",
     "dev": "bun --watch src/index.ts",
+    "build": "bun build src/index.ts --outdir dist --target node --packages external",
     "test": "bun test --pass-with-no-tests",
     "test:coverage": "bun test --coverage --pass-with-no-tests",
     "typecheck": "tsc --noEmit",

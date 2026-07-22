@@ -8,6 +8,10 @@ fi
 
 apt-get update
 apt-get install -y --no-install-recommends ca-certificates curl git unzip
+if ! command -v node >/dev/null 2>&1 || ! node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 20 ? 0 : 1)'; then
+  curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+  apt-get install -y --no-install-recommends nodejs
+fi
 if ! id bookings-bot >/dev/null 2>&1; then
   useradd --system --home-dir /opt/bookings-bot --create-home --shell /usr/sbin/nologin bookings-bot
 fi

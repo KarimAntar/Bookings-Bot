@@ -24,6 +24,8 @@ rm -f "$archive"
 trap - EXIT
 chown -R bookings-bot:bookings-bot "$release"
 sudo -u bookings-bot /usr/local/bin/bun install --frozen-lockfile --cwd "$release" --production
+sudo -u bookings-bot /usr/local/bin/bun run --cwd "$release" build
+"$release/scripts/runtime-check.sh" /usr/bin/node
 ln -sfn "$release" /opt/bookings-bot/current
 chown -h bookings-bot:bookings-bot /opt/bookings-bot/current
 install -o root -g root -m 0644 "$release/deploy/systemd/bookings-bot.service" /etc/systemd/system/bookings-bot.service
