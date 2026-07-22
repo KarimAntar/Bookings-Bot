@@ -32,7 +32,18 @@ The file will:
 
 ## Visual Language
 
-Use a restrained navy, blue, white, and green palette. Cards, flow arrows, status pills, and a simulated Slack thread will explain the system visually. The presentation must look professional but remain simple. Animations will be limited to brief slide transitions and disabled when reduced motion is requested.
+Use a restrained navy, blue, white, and green palette. The presentation must prioritize immediate understanding over visual detail.
+
+- Present one main idea per slide.
+- Use short headings and no more than four short points on a slide.
+- Use large labels and familiar icons or simple geometric shapes.
+- Limit every flow diagram to four boxes in one straight line.
+- Do not use complex charts, axes, legends, nested diagrams, technical architecture symbols, or decorative data visualizations.
+- Explain technical terms in plain language when they first appear. For example, describe Socket Mode as a secure connection from the bot to Slack.
+- Use simple arrows to show direction and avoid crossing lines.
+- Use cards, status pills, and a simulated Slack thread only where they clarify the message.
+
+Animations will be limited to brief slide transitions and disabled when reduced motion is requested.
 
 ## Slide Outline
 
@@ -184,5 +195,8 @@ Before pushing:
 - The presentation is readable on a laptop and printable to PDF.
 - The simulated booking example contains no real personal data.
 - The content accurately reflects the approved Google VM architecture and implementation progress.
+- A manager unfamiliar with software architecture can explain the main workflow after viewing the presentation once.
+- Every diagram uses no more than four clearly labeled boxes and a single direction of travel.
+- No slide contains a complex chart, technical notation, or more than four primary bullet points.
 - The presentation contains the final private GitHub repository URL before publication is complete.
 - No tracked runtime file or management-facing content uses Hugging Face as the current deployment solution.
