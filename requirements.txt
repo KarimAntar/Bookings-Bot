@@ -1,0 +1,5 @@
+slack_bolt
+google-generativeai
+gradio
+python-dotenv
+requests
