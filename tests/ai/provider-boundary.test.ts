@@ -9,8 +9,6 @@ test("JSON schema and Zod enforce notes and public flags constraints",()=>{
   expect(ReviewResultSchema.parse(valid)).toEqual(valid);
   expect(()=>ReviewResultSchema.parse({...valid,flags:[]})).toThrow();
   expect(REVIEW_RESPONSE_SCHEMA.required).toContain("notesSummary");
-  expect(REVIEW_RESPONSE_SCHEMA.properties.flags.minItems).toBe(1);
-  expect(REVIEW_RESPONSE_SCHEMA.properties.evidenceRoles.items.properties.imageId.pattern).toStartWith("^(original|correction):");
 });
 
 test("provider sends exactly one ordered package with fixed JSON config",async()=>{

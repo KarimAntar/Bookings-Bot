@@ -42,8 +42,8 @@ export function registerMessageListener(app: App, config: AppConfig, reviewServi
     const reaction = async (name: string) => { try { await client.reactions.add({ channel: message.channel, timestamp: message.ts, name }); } catch (error) { logger.debug({ err: error, eventId, reaction: name }, "Slack reaction unavailable"); } };
     const pass = async () => {
       try {
+        await reaction("eyes");
         await queue.run(async () => {
-          await reaction("hourglass_flowing_sand");
           let result: ReviewResult;
           try {
             const files = selectImageFiles(message.files ?? [], config.maxAttachments, config.maxImageBytes);

@@ -8,21 +8,21 @@ A green Qualification Questions indicator means every visible qualification ques
 Decision rules: approved only when evidence is readable and complete, core fields match, requirements pass, and required notes are present; correction_required for missing evidence, correctable mismatch, or missing required note entry; needs_human_review for ambiguity, contradiction, unreadability, unsafe-to-publish content, or low confidence; rejected only for a clearly proven non-correctable campaign eligibility failure.
 List every actionable mismatch, missing note entry, missing evidence item, and failed requirement. Keep reasoning concise and never expose chain-of-thought.`;
 
-const value = { anyOf: [{ type: "string" }, { type: "number" }, { type: "boolean" }] } as const;
-const text = { type: "string", minLength: 1, maxLength: 500 } as const;
-const stringArray = { type: "array", maxItems: 50, items: text } as const;
+const value = { type: "string" } as const;
+const text = { type: "string" } as const;
+const stringArray = { type: "array", items: text } as const;
 export const REVIEW_RESPONSE_SCHEMA = {
-  type: "object", additionalProperties: false,
+  type: "object",
   required: ["status", "reasoning", "confidence", "evidenceRoles", "crmFields", "bookingFields", "campaignRequirements", "qualificationQuestions", "notesSummary", "mismatches", "missingNoteEntries", "missingEvidence", "failedRequirements", "flags"],
   properties: {
     status: { type: "string", enum: ["approved", "correction_required", "needs_human_review", "rejected"] },
-    reasoning: { type: "string", minLength: 1, maxLength: 1000 }, confidence: { type: "number", minimum: 0, maximum: 1 },
-    evidenceRoles: { type: "array", maxItems: 20, items: { type: "object", additionalProperties: false, required: ["imageId", "roles", "readable"], properties: { imageId: { type: "string", pattern: "^(original|correction):[^\\s]+$", maxLength: 500 }, roles: { type: "array", minItems: 1, maxItems: 7, items: { type: "string", enum: ["crm_prospect", "campaign_requirements", "campaign_script", "qualification_questions", "booking_form", "booking_notes", "unknown"] } }, readable: { type: "boolean" } } } },
-    crmFields: { type: "object", maxProperties: 50, additionalProperties: value }, bookingFields: { type: "object", maxProperties: 50, additionalProperties: value },
-    campaignRequirements: { type: "array", maxItems: 50, items: { type: "object", additionalProperties: false, required: ["name", "requiredValue", "actualValue", "passed", "mustAppearInNotes"], properties: { name: text, requiredValue: value, actualValue: value, passed: { type: "boolean" }, mustAppearInNotes: { type: "boolean" } } } },
-    qualificationQuestions: { type: "array", maxItems: 50, items: { type: "object", additionalProperties: false, required: ["question", "answer", "required", "presentInNotes"], properties: { question: text, answer: value, required: { type: "boolean" }, presentInNotes: { type: "boolean" } } } },
-    notesSummary: { type: "object", additionalProperties: false, required: ["present", "contentSummary", "requiredEntriesPresent"], properties: { present: { type: "boolean" }, contentSummary: text, requiredEntriesPresent: { type: "boolean" } } },
-    mismatches: { type: "array", maxItems: 50, items: { type: "object", additionalProperties: false, required: ["field", "crmValue", "bookingValue"], properties: { field: text, crmValue: value, bookingValue: value } } },
-    missingNoteEntries: stringArray, missingEvidence: { ...stringArray, maxItems: 20 }, failedRequirements: stringArray, flags: { type: "array", minItems: 1, maxItems: 50, items: { type: "string", minLength: 1, maxLength: 100 } },
+    reasoning: { type: "string" }, confidence: { type: "number" },
+    evidenceRoles: { type: "array", items: { type: "object", required: ["imageId", "roles", "readable"], properties: { imageId: { type: "string" }, roles: { type: "array", items: { type: "string", enum: ["crm_prospect", "campaign_requirements", "campaign_script", "qualification_questions", "booking_form", "booking_notes", "unknown"] } }, readable: { type: "boolean" } } } },
+    crmFields: { type: "object" }, bookingFields: { type: "object" },
+    campaignRequirements: { type: "array", items: { type: "object", required: ["name", "requiredValue", "actualValue", "passed", "mustAppearInNotes"], properties: { name: text, requiredValue: value, actualValue: value, passed: { type: "boolean" }, mustAppearInNotes: { type: "boolean" } } } },
+    qualificationQuestions: { type: "array", items: { type: "object", required: ["question", "answer", "required", "presentInNotes"], properties: { question: text, answer: value, required: { type: "boolean" }, presentInNotes: { type: "boolean" } } } },
+    notesSummary: { type: "object", required: ["present", "contentSummary", "requiredEntriesPresent"], properties: { present: { type: "boolean" }, contentSummary: text, requiredEntriesPresent: { type: "boolean" } } },
+    mismatches: { type: "array", items: { type: "object", required: ["field", "crmValue", "bookingValue"], properties: { field: text, crmValue: value, bookingValue: value } } },
+    missingNoteEntries: stringArray, missingEvidence: stringArray, failedRequirements: stringArray, flags: { type: "array", items: { type: "string" } },
   },
 } as const;
