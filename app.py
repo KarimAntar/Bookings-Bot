@@ -191,4 +191,5 @@ if __name__ == "__main__":
 
     # Launch Gradio
     demo = create_ui()
-    demo.launch(server_name="0.0.0.0", server_port=7860)
+    # Adding share=False prevents Gradio from attempting to create public tunnels which can clash with Hugging Face's reverse proxy
+    demo.launch(server_name="0.0.0.0", server_port=7860, share=False)
