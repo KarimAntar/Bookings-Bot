@@ -479,12 +479,9 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        scroll-behavior: auto !important;
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-      }
+      html { scroll-behavior: auto; }
+      .slide.active { animation: none; }
+      #slide-progress { transition: none; }
     }
 
     @media print {
@@ -493,7 +490,7 @@
       .presentation-shell { display: block; padding: 0; }
       .deck { width: 100%; }
       .slide, .slide.active {
-        display: flex !important;
+        display: flex;
         min-height: 100vh;
         border: 0;
         border-radius: 0;
@@ -509,6 +506,7 @@
 <body>
   <main class="presentation-shell" aria-label="Bookings Bot management presentation">
     <div class="deck" id="slide-deck">
+      <!-- biome-ignore lint/a11y/noRedundantRoles: The approved slide contract explicitly requires role="region" on every semantic section. -->
       <section class="slide active title-slide" role="region" aria-roledescription="slide" aria-label="Slide 1 of 12: Bookings Bot" aria-hidden="false" id="slide-1">
         <p class="eyebrow">Management overview</p>
         <h1>Bookings Bot</h1>
@@ -516,6 +514,7 @@
         <p class="status-pill">Implementation &amp; deployment preparation</p>
       </section>
 
+      <!-- biome-ignore lint/a11y/noRedundantRoles: The approved slide contract explicitly requires role="region" on every semantic section. -->
       <section class="slide" role="region" aria-roledescription="slide" aria-label="Slide 2 of 12: The Current Problem" aria-hidden="true" id="slide-2">
         <p class="slide-number">01 / The opportunity</p>
         <h2>The Current Problem</h2>
@@ -528,40 +527,43 @@
         </div>
       </section>
 
+      <!-- biome-ignore lint/a11y/noRedundantRoles: The approved slide contract explicitly requires role="region" on every semantic section. -->
       <section class="slide" role="region" aria-roledescription="slide" aria-label="Slide 3 of 12: The New Method" aria-hidden="true" id="slide-3">
         <p class="slide-number">02 / The method</p>
         <h2>The New Method</h2>
         <p class="lede">A straight, four-step path keeps the work easy to understand.</p>
-        <div class="flow" aria-label="New review method">
+        <figure class="flow" aria-label="New review method">
           <div class="flow-box"><span class="flow-step">Step 1</span><strong>Agent posts screenshot</strong><span>Inside the normal Slack workflow</span></div>
           <div class="flow-box"><span class="flow-step">Step 2</span><strong>Bot receives it</strong><span>The request stays in the channel</span></div>
           <div class="flow-box"><span class="flow-step">Step 3</span><strong>AI reviews visible details</strong><span>Only what the image clearly shows</span></div>
           <div class="flow-box"><span class="flow-step">Step 4</span><strong>Bot replies in thread</strong><span>A concise first-pass result</span></div>
-        </div>
+        </figure>
       </section>
 
+      <!-- biome-ignore lint/a11y/noRedundantRoles: The approved slide contract explicitly requires role="region" on every semantic section. -->
       <section class="slide" role="region" aria-roledescription="slide" aria-label="Slide 4 of 12: Simple Architecture" aria-hidden="true" id="slide-4">
         <p class="slide-number">03 / How it connects</p>
         <h2>Simple Architecture</h2>
         <p class="lede">The bot uses the existing Google VM and a secure outbound connection—no public webhook.</p>
-        <div class="flow" aria-label="System architecture">
+        <figure class="flow" aria-label="System architecture">
           <div class="flow-box"><span class="flow-step">Workplace</span><strong>Slack</strong><span>Screenshot and request</span></div>
           <div class="flow-box"><span class="flow-step">Service</span><strong>Bookings Bot</strong><span>Runs on the Google VM</span></div>
           <div class="flow-box"><span class="flow-step">Review</span><strong>Gemini</strong><span>Checks visible booking details</span></div>
           <div class="flow-box"><span class="flow-step">Result</span><strong>Slack reply</strong><span>Returns to the same thread</span></div>
-        </div>
+        </figure>
         <p class="note">Secure connection from the VM; no public inbound endpoint is required.</p>
       </section>
 
+      <!-- biome-ignore lint/a11y/noRedundantRoles: The approved slide contract explicitly requires role="region" on every semantic section. -->
       <section class="slide" role="region" aria-roledescription="slide" aria-label="Slide 5 of 12: Example Review" aria-hidden="true" id="slide-5">
         <p class="slide-number">04 / Fictional example</p>
         <h2>Example Review</h2>
         <p class="lede">The bot does not guess when an important value is not visible.</p>
         <div class="thread">
-          <div class="conversation" aria-label="Fictional Slack thread">
+          <section class="conversation" aria-label="Fictional Slack thread">
             <div class="message"><strong>Booking agent</strong><p>Please review booking BK-1048.</p></div>
             <div class="message bot"><strong class="review-result">Needs Human Review</strong><p>The payment value is cropped. Please check the source before deciding.</p></div>
-          </div>
+          </section>
           <div class="mock-shot" role="img" aria-label="Generic invented booking screenshot with a cropped payment value">
             <div class="shot-header"><span>Booking summary</span><span>BK-1048</span></div>
             <div class="shot-row"><span>Route</span><strong>North Station → Central</strong></div>
@@ -572,6 +574,7 @@
         </div>
       </section>
 
+      <!-- biome-ignore lint/a11y/noRedundantRoles: The approved slide contract explicitly requires role="region" on every semantic section. -->
       <section class="slide" role="region" aria-roledescription="slide" aria-label="Slide 6 of 12: Human Control" aria-hidden="true" id="slide-6">
         <p class="slide-number">05 / Safe boundaries</p>
         <h2>Human Control</h2>
@@ -584,6 +587,7 @@
         </div>
       </section>
 
+      <!-- biome-ignore lint/a11y/noRedundantRoles: The approved slide contract explicitly requires role="region" on every semantic section. -->
       <section class="slide" role="region" aria-roledescription="slide" aria-label="Slide 7 of 12: Project Structure" aria-hidden="true" id="slide-7">
         <p class="slide-number">06 / Maintainable design</p>
         <h2>Project Structure</h2>
@@ -598,6 +602,7 @@
         </div>
       </section>
 
+      <!-- biome-ignore lint/a11y/noRedundantRoles: The approved slide contract explicitly requires role="region" on every semantic section. -->
       <section class="slide" role="region" aria-roledescription="slide" aria-label="Slide 8 of 12: Security" aria-hidden="true" id="slide-8">
         <p class="slide-number">07 / Protection by default</p>
         <h2>Security</h2>
@@ -610,6 +615,7 @@
         </div>
       </section>
 
+      <!-- biome-ignore lint/a11y/noRedundantRoles: The approved slide contract explicitly requires role="region" on every semantic section. -->
       <section class="slide" role="region" aria-roledescription="slide" aria-label="Slide 9 of 12: Work Progress" aria-hidden="true" id="slide-9">
         <p class="slide-number">08 / Scaffold-stage view</p>
         <h2>Work Progress</h2>
@@ -621,6 +627,7 @@
         </div>
       </section>
 
+      <!-- biome-ignore lint/a11y/noRedundantRoles: The approved slide contract explicitly requires role="region" on every semantic section. -->
       <section class="slide" role="region" aria-roledescription="slide" aria-label="Slide 10 of 12: Operations and Cost Control" aria-hidden="true" id="slide-10">
         <p class="slide-number">09 / Lean operation</p>
         <h2>Operations &amp; Cost Control</h2>
@@ -635,19 +642,22 @@
         </div>
       </section>
 
+      <!-- biome-ignore lint/a11y/noRedundantRoles: The approved slide contract explicitly requires role="region" on every semantic section. -->
       <section class="slide" role="region" aria-roledescription="slide" aria-label="Slide 11 of 12: GitHub and Deployment" aria-hidden="true" id="slide-11">
         <p class="slide-number">10 / Release path</p>
         <h2>GitHub &amp; Deployment</h2>
         <p class="lede">One controlled path takes reviewed code to the Slack pilot.</p>
-        <div class="flow" aria-label="Deployment flow">
+        <figure class="flow" aria-label="Deployment flow">
           <div class="flow-box"><span class="flow-step">Source</span><strong>Private GitHub</strong><span>Reviewed project code</span></div>
           <div class="flow-box"><span class="flow-step">Host</span><strong>Google VM</strong><span>Secure runtime secrets</span></div>
           <div class="flow-box"><span class="flow-step">Service</span><strong>systemd</strong><span>Managed bot process</span></div>
           <div class="flow-box"><span class="flow-step">Workplace</span><strong>Slack</strong><span>Test then pilot</span></div>
-        </div>
+        </figure>
+        <!-- biome-ignore lint/a11y/useValidAnchor: The approved pending-repository contract requires an anchor with no href until publication. -->
         <a class="pending-link" data-repository-status="pending" aria-disabled="true">Repository link pending publication</a>
       </section>
 
+      <!-- biome-ignore lint/a11y/noRedundantRoles: The approved slide contract explicitly requires role="region" on every semantic section. -->
       <section class="slide" role="region" aria-roledescription="slide" aria-label="Slide 12 of 12: Next Steps" aria-hidden="true" id="slide-12">
         <p class="slide-number">11 / Controlled launch</p>
         <h2>Next Steps</h2>
@@ -681,7 +691,7 @@
       const nextButton = document.getElementById("next-slide");
       const counter = document.getElementById("slide-counter");
       const progress = document.getElementById("slide-progress");
-      const progressBar = progress && progress.parentElement;
+      const progressBar = progress?.parentElement;
 
       if (!slides.length || !previousButton || !nextButton || !counter || !progress) {
         return;
