@@ -24,12 +24,27 @@ export class RuleStore {
     return task;
   }
 
-  async removeRule(index: number): Promise<boolean> {
+  async deleteRule(index: number): Promise<boolean> {
     let result = false;
     const task = this.queue.then(async () => {
       const rules = await this.getRules();
       if (index >= 0 && index < rules.length) {
         rules.splice(index, 1);
+        await fs.writeFile(this.filepath, JSON.stringify(rules, null, 2));
+        result = true;
+      }
+    });
+    this.queue = task.catch(() => {});
+    await task;
+    return result;
+  }
+
+  async updateRule(index: number, rule: string): Promise<boolean> {
+    let result = false;
+    const task = this.queue.then(async () => {
+      const rules = await this.getRules();
+      if (index >= 0 && index < rules.length) {
+        rules[index] = rule;
         await fs.writeFile(this.filepath, JSON.stringify(rules, null, 2));
         result = true;
       }

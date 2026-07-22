@@ -5,7 +5,7 @@ const ACTION_SCHEMA = {
   type: "object",
   required: ["action", "response"],
   properties: {
-    action: { type: "string", enum: ["add", "remove", "list", "unknown"] },
+    action: { type: "string", enum: ["add", "delete", "update", "list", "unknown"] },
     payload: { type: "string" },
     response: { type: "string" }
   }
@@ -26,7 +26,8 @@ ${rules.length === 0 ? "None" : rules.map((r, i) => `${i}: ${r}`).join('\n')}
 
 Based on the admin's message, determine the action:
 - add: include the rule text in 'payload'.
-- remove: include the exact rule index as 'payload' (as a string number).
+- delete: include the exact rule index as 'payload' (as a string number).
+- update: include the exact rule index and new rule text in 'payload' (format: "index|new text").
 - list: no payload needed.
 - unknown: for any unrelated conversation.
 Provide a friendly conversational response explaining what you did in 'response'.`;
@@ -47,11 +48,19 @@ Provide a friendly conversational response explaining what you did in 'response'
     
     if (result.action === "add" && result.payload) {
       await this.store.addRule(result.payload);
-    } else if (result.action === "remove" && result.payload) {
+    } else if (result.action === "delete" && result.payload) {
       const index = parseInt(result.payload, 10);
       if (!isNaN(index)) {
-          const removed = await this.store.removeRule(index);
-          if (!removed) return "I couldn't find a rule at that index to remove.";
+          const removed = await this.store.deleteRule(index);
+          if (!removed) return "I couldn't find a rule at that index to delete.";
+      }
+    } else if (result.action === "update" && result.payload) {
+      const [indexStr, ...textParts] = result.payload.split("|");
+      const index = parseInt(indexStr, 10);
+      const text = textParts.join("|");
+      if (!isNaN(index) && text) {
+          const updated = await this.store.updateRule(index, text);
+          if (!updated) return "I couldn't find a rule at that index to update.";
       }
     }
     
