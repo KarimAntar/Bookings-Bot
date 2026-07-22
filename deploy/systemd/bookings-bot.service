@@ -1,0 +1,34 @@
+[Unit]
+Description=Bookings Bot Slack service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=bookings-bot
+Group=bookings-bot
+WorkingDirectory=/opt/bookings-bot/current
+EnvironmentFile=/etc/bookings-bot/bookings-bot.env
+ExecStart=/usr/local/bin/bun run src/index.ts
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
