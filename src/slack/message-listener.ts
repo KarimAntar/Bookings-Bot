@@ -6,80 +6,56 @@ import { BoundedSemaphore } from "../runtime/semaphore";
 import type { ReviewService } from "../reviews/review-service";
 import { downloadSlackImage, selectImageFiles, type SlackFile } from "./files";
 import { formatReviewResult, terminalReaction } from "./format";
+import { ReviewThreadStore } from "./review-thread-store";
 
-interface SlackMessage {
-  type: "message";
-  subtype?: string;
-  channel: string;
-  ts: string;
-  thread_ts?: string;
-  text?: string;
-  bot_id?: string;
-  files?: SlackFile[];
+export interface SlackMessage { type: "message"; subtype?: string; channel: string; ts: string; thread_ts?: string; text?: string; bot_id?: string; files?: SlackFile[] }
+export type MessageKind = "root" | "correction" | "ignore";
+export function classifyMessage(message: SlackMessage, activeThread: boolean): MessageKind {
+  if (message.bot_id || (message.subtype !== undefined && message.subtype !== "file_share")) return "ignore";
+  if (message.thread_ts) return activeThread && (message.text?.trim() || message.files?.length) ? "correction" : "ignore";
+  return message.files?.length ? "root" : "ignore";
 }
+export function isReviewableMessage(message: SlackMessage): boolean { return classifyMessage(message, false) === "root"; }
 
-export function isReviewableMessage(message: SlackMessage): boolean {
-  if (message.bot_id || !message.files?.length) return false;
-  return message.subtype === undefined || message.subtype === "file_share";
-}
-
-export function registerMessageListener(
-  app: App,
-  config: AppConfig,
-  reviewService: ReviewService,
-  logger: Logger,
-): void {
+export function registerMessageListener(app: App, config: AppConfig, reviewService: ReviewService, logger: Logger, store = new ReviewThreadStore(config.maxActiveReviews, config.activeReviewTtlMs)): void {
   const dedupe = new DedupeCache(config.dedupeTtlMs);
   const queue = new BoundedSemaphore(config.maxConcurrentReviews, config.maxQueuedReviews);
-
   app.event("message", async ({ event, body, client }) => {
     const message = event as SlackMessage;
-    if (!isReviewableMessage(message)) return;
     if (config.allowedChannelIds.size && !config.allowedChannelIds.has(message.channel)) return;
-    const eventId = "event_id" in body && typeof body.event_id === "string"
-      ? body.event_id
-      : `${message.channel}:${message.ts}`;
+    const rootTs = message.thread_ts ?? message.ts;
+    const kind = classifyMessage(message, Boolean(message.thread_ts && store.has(message.channel, rootTs)));
+    if (kind === "ignore") return;
+    const eventId = "event_id" in body && typeof body.event_id === "string" ? body.event_id : `${message.channel}:${message.ts}`;
     if (!dedupe.addIfNew(eventId)) return;
-    const reaction = async (name: string): Promise<void> => {
-      try {
-        await client.reactions.add({ channel: message.channel, timestamp: message.ts, name });
-      } catch (error) {
-        logger.debug({ err: error, eventId, reaction: name }, "Slack reaction unavailable");
-      }
-    };
-
+    const reaction = async (name: string) => { try { await client.reactions.add({ channel: message.channel, timestamp: message.ts, name }); } catch (error) { logger.debug({ err: error, eventId, reaction: name }, "Slack reaction unavailable"); } };
     try {
       await queue.run(async () => {
         await reaction("hourglass_flowing_sand");
         let result: ReviewResult;
         try {
           const files = selectImageFiles(message.files ?? [], config.maxAttachments, config.maxImageBytes);
-          const images = await Promise.all(files.map((file) => downloadSlackImage(
-            file,
-            config.slackBotToken,
-            config.maxImageBytes,
-            config.downloadTimeoutMs,
-          )));
-          result = await reviewService.review({ eventId, messageText: message.text ?? "", images });
+          const downloaded = await Promise.all(files.map((file) => downloadSlackImage(file, config.slackBotToken, config.maxImageBytes, config.downloadTimeoutMs)));
+          const source = kind === "root" ? "original" as const : "correction" as const;
+          const images = downloaded.map((image) => ({ ...image, id: `${source}:${image.id}`, source }));
+          const session = kind === "root"
+            ? store.create({ channel: message.channel, rootTs, originalText: message.text ?? "", originalImages: images, lastEventId: eventId })
+            : store.applyCorrection(message.channel, rootTs, { text: message.text ?? "", images, eventId });
+          if (!session) return;
+          result = await reviewService.review({ eventId, messageText: session.evidence.messageText, images: session.evidence.images });
         } catch (error) {
-          logger.error({ err: error, eventId }, "Slack submission processing failed");
+          if (kind === "root") store.close(message.channel, rootTs);
+          logger.error({ err: error, eventId, channel: message.channel, rootTs, kind }, "Slack submission processing failed");
           result = humanReviewFallback("submission_processing_failed");
         }
-        await client.chat.postMessage({
-          channel: message.channel,
-          thread_ts: message.thread_ts ?? message.ts,
-          text: formatReviewResult(result),
-        });
+        await client.chat.postMessage({ channel: message.channel, thread_ts: rootTs, text: formatReviewResult(result) });
         await reaction(terminalReaction[result.status]);
+        if (result.status === "approved" || result.status === "rejected") store.close(message.channel, rootTs);
       });
     } catch (error) {
-      logger.warn({ err: error, eventId }, "Review queue rejected submission");
+      logger.warn({ err: error, eventId, channel: message.channel, rootTs }, "Review queue rejected submission");
       const fallback = humanReviewFallback("review_queue_unavailable");
-      await client.chat.postMessage({
-        channel: message.channel,
-        thread_ts: message.thread_ts ?? message.ts,
-        text: formatReviewResult(fallback),
-      });
+      await client.chat.postMessage({ channel: message.channel, thread_ts: rootTs, text: formatReviewResult(fallback) });
       await reaction(terminalReaction.needs_human_review);
     }
   });

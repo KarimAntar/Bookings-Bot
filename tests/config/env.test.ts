@@ -24,6 +24,8 @@ describe("parseEnv", () => {
       maxConcurrentReviews: 2,
       maxQueuedReviews: 20,
       dedupeTtlMs: 600_000,
+      maxActiveReviews: 500,
+      activeReviewTtlMs: 86_400_000,
       lowConfidenceThreshold: 0.8,
       logLevel: "info",
     });

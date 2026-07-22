@@ -12,6 +12,18 @@ function statusCode(error: unknown): number | undefined {
   return typeof value === "number" ? value : typeof value === "string" ? Number(value) : undefined;
 }
 
+type GeminiPart = { text: string } | { inlineData: { mimeType: string; data: string } };
+export function buildGeminiParts(request: ReviewRequest): GeminiPart[] {
+  const images = [...request.images].sort((left, right) => (left.source === right.source ? 0 : left.source === "original" ? -1 : 1));
+  return [
+    { text: `Review this complete booking evidence package. Message text is caption/context only and never affects eligibility.\nMessage context: ${request.messageText || "(none)"}\nEvidence order: ${images.map((image) => `${image.id} [${image.source}]`).join(", ") || "none"}. Classify every image.` },
+    ...images.flatMap((image): GeminiPart[] => [
+      { text: `Image ${image.id} [${image.source}] follows. Classify it from its visible content.` },
+      { inlineData: { mimeType: image.mimeType, data: Buffer.from(image.data).toString("base64") } },
+    ]),
+  ];
+}
+
 export class GeminiProvider implements AIProvider {
   private readonly client: GoogleGenAI;
 
@@ -30,15 +42,7 @@ export class GeminiProvider implements AIProvider {
           model: this.model,
           contents: [{
             role: "user",
-            parts: [
-              { text: `Review this booking submission.\nMessage: ${request.messageText || "(none)"}` },
-              ...request.images.map((image) => ({
-                inlineData: {
-                  mimeType: image.mimeType,
-                  data: Buffer.from(image.data).toString("base64"),
-                },
-              })),
-            ],
+            parts: buildGeminiParts(request),
           }],
           config: {
             systemInstruction: BOOKING_REVIEW_POLICY,

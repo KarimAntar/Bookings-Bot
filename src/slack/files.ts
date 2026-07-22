@@ -71,5 +71,6 @@ export async function downloadSlackImage(
     name: file.name ?? file.id,
     mimeType: file.mimetype as ReviewImage["mimeType"],
     data,
+    source: "original",
   };
 }

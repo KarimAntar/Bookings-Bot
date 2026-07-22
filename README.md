@@ -1,6 +1,6 @@
 # Bookings Bot
 
-Private Slack bot that reviews booking screenshots with Gemini and conservatively returns approved, rejected, or needs-human-review decisions in a single thread reply.
+Private Slack bot that reviews complete multi-screenshot booking packages with Gemini and returns approved, correction-required, rejected, or needs-human-review decisions in the original Slack thread.
 
 Repository: https://github.com/KarimAntar/Bookings-Bot
 
@@ -30,6 +30,14 @@ node --env-file=.env dist/index.js
 ```
 
 Bun builds the TypeScript application, while Node runs Slack Socket Mode because Slack's WebSocket heartbeat requires an `undici` ping API that Bun does not currently expose. Socket Mode requires no inbound HTTP port. The default vision model is `gemini-3.5-flash-lite`; override `GEMINI_MODEL` in the environment file when Google changes model availability.
+
+## Booking review flow
+
+Every top-level message with one to four PNG, JPEG, or WebP screenshots starts a review, regardless of its caption, mentions, or test wording. Submit the available CRM prospect, campaign requirements/script, qualification-question indicator and answers, completed booking form, and booking notes as one package. Gemini classifies every image and compares CRM-authoritative prospect values with the booking while applying campaign-authoritative thresholds and script-defined note requirements.
+
+Correctable mismatches or omissions receive an actionable `Correction required` reply. Reply in that same thread with text and/or replacement screenshots; the bot re-reviews the retained original package plus only the latest correction. Approved and rejected sessions close. Correction and human-review sessions remain active for `ACTIVE_REVIEW_TTL_MS`, subject to `MAX_ACTIVE_REVIEWS` capacity. This state is process memory only, so after a service restart submit a new top-level package.
+
+Only `Needs human review` responses contain Slack's `<!here>` mention. Correction, approval, and rejection responses never notify the channel.
 
 ## Google Compute Engine e2-micro
 

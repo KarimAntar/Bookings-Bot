@@ -4,6 +4,7 @@ import { GeminiProvider } from "../ai/gemini-provider";
 import { createLogger } from "../observability/logger";
 import { ReviewService } from "../reviews/review-service";
 import { registerMessageListener } from "../slack/message-listener";
+import { ReviewThreadStore } from "../slack/review-thread-store";
 
 export function createApp(config: AppConfig): App {
   const logger = createLogger(config.logLevel);
@@ -24,7 +25,8 @@ export function createApp(config: AppConfig): App {
   });
   const provider = new GeminiProvider(config.geminiApiKey, config.geminiModel, config.aiTimeoutMs);
   const service = new ReviewService(provider, config.lowConfidenceThreshold, logger);
-  registerMessageListener(app, config, service, slackLogger);
+  const reviewThreadStore = new ReviewThreadStore(config.maxActiveReviews, config.activeReviewTtlMs);
+  registerMessageListener(app, config, service, slackLogger, reviewThreadStore);
   app.error(async (error) => logger.error({ err: error }, "Unhandled Slack application error"));
   return app;
 }

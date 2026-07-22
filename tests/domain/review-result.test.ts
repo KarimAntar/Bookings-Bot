@@ -1,82 +1,27 @@
 import { describe, expect, test } from "bun:test";
-import {
-  humanReviewFallback,
-  ReviewResultSchema,
-} from "../../src/domain/review-result";
+import { humanReviewFallback, ReviewResultSchema } from "../../src/domain/review-result";
+
+const valid = {
+  status: "approved" as const,
+  reasoning: "  Booking details match.  ",
+  confidence: 0.95,
+  evidenceRoles: [], crmFields: { guest: "Ada", nights: 3, prepaid: true, note: null }, bookingFields: {},
+  campaignRequirements: [], qualificationQuestions: [], notesSummary: { present: true, contentSummary: "Booking notes verified.", requiredEntriesPresent: true }, mismatches: [], missingNoteEntries: [], missingEvidence: [], failedRequirements: [],
+  flags: ["  verified  "],
+};
 
 describe("ReviewResultSchema", () => {
   test("parses and normalizes a valid review", () => {
-    const result = ReviewResultSchema.parse({
-      status: "approved",
-      reasoning: "  Booking details match.  ",
-      confidence: 0.95,
-      extractedFields: {
-        guest: "Ada",
-        nights: 3,
-        prepaid: true,
-        note: null,
-      },
-      flags: ["  verified  "],
-    });
-
-    expect(result).toEqual({
-      status: "approved",
-      reasoning: "Booking details match.",
-      confidence: 0.95,
-      extractedFields: {
-        guest: "Ada",
-        nights: 3,
-        prepaid: true,
-        note: null,
-      },
-      flags: ["verified"],
-    });
+    expect(ReviewResultSchema.parse(valid)).toEqual({ ...valid, reasoning: "Booking details match.", flags: ["verified"] });
   });
-
-  test("rejects unknown top-level provider fields", () => {
-    expect(() =>
-      ReviewResultSchema.parse({
-        status: "approved",
-        reasoning: "Booking details match.",
-        confidence: 0.95,
-        extractedFields: {},
-        flags: [],
-        providerMetadata: "must not be accepted",
-      }),
-    ).toThrow();
-  });
-
-  test("rejects confidence outside zero through one", () => {
-    expect(() =>
-      ReviewResultSchema.parse({
-        status: "rejected",
-        reasoning: "Mismatch.",
-        confidence: 1.01,
-        extractedFields: {},
-        flags: [],
-      }),
-    ).toThrow();
-  });
-
-  test("rejects empty trimmed reasoning and oversized flag collections", () => {
-    expect(() =>
-      ReviewResultSchema.parse({
-        status: "approved",
-        reasoning: "   ",
-        confidence: 1,
-        extractedFields: {},
-        flags: Array.from({ length: 51 }, (_, index) => `flag-${index}`),
-      }),
-    ).toThrow();
-  });
+  test("rejects unknown top-level provider fields", () => expect(() => ReviewResultSchema.parse({ ...valid, providerMetadata: "no" })).toThrow());
+  test("rejects confidence outside zero through one", () => expect(() => ReviewResultSchema.parse({ ...valid, confidence: 1.01 })).toThrow());
+  test("rejects empty reasoning and oversized flags", () => expect(() => ReviewResultSchema.parse({ ...valid, reasoning: " ", flags: Array.from({ length: 51 }, (_, i) => `f-${i}`) })).toThrow());
 });
 
-test("humanReviewFallback returns the exact conservative result", () => {
+test("humanReviewFallback returns a conservative rich result", () => {
   expect(humanReviewFallback("  ai_timeout  ")).toEqual({
-    status: "needs_human_review",
-    reasoning: "Automated review could not complete safely.",
-    confidence: 0,
-    extractedFields: {},
-    flags: ["ai_timeout"],
+    status: "needs_human_review", reasoning: "Automated review could not complete safely.", confidence: 0,
+    evidenceRoles: [], crmFields: {}, bookingFields: {}, campaignRequirements: [], qualificationQuestions: [], notesSummary: { present: false, contentSummary: "Notes could not be verified.", requiredEntriesPresent: false }, mismatches: [], missingNoteEntries: [], missingEvidence: [], failedRequirements: [], flags: ["ai_timeout"],
   });
 });

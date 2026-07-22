@@ -26,6 +26,8 @@ const EnvSchema = z.object({
   MAX_CONCURRENT_REVIEWS: integer(1, 100).default(2),
   MAX_QUEUED_REVIEWS: integer(0, 10_000).default(20),
   DEDUPE_TTL_MS: integer(1_000, 86_400_000).default(600_000),
+  MAX_ACTIVE_REVIEWS: integer(1, 10_000).default(500),
+  ACTIVE_REVIEW_TTL_MS: integer(1_000, 604_800_000).default(86_400_000),
   LOW_CONFIDENCE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.8),
   LOG_LEVEL: LogLevelSchema.default("info"),
 });
@@ -43,6 +45,8 @@ export interface AppConfig {
   readonly maxConcurrentReviews: number;
   readonly maxQueuedReviews: number;
   readonly dedupeTtlMs: number;
+  readonly maxActiveReviews: number;
+  readonly activeReviewTtlMs: number;
   readonly lowConfidenceThreshold: number;
   readonly logLevel: z.infer<typeof LogLevelSchema>;
 }
@@ -67,6 +71,8 @@ export function parseEnv(env: Record<string, string | undefined>): AppConfig {
     maxConcurrentReviews: parsed.MAX_CONCURRENT_REVIEWS,
     maxQueuedReviews: parsed.MAX_QUEUED_REVIEWS,
     dedupeTtlMs: parsed.DEDUPE_TTL_MS,
+    maxActiveReviews: parsed.MAX_ACTIVE_REVIEWS,
+    activeReviewTtlMs: parsed.ACTIVE_REVIEW_TTL_MS,
     lowConfidenceThreshold: parsed.LOW_CONFIDENCE_THRESHOLD,
     logLevel: parsed.LOG_LEVEL,
   };
