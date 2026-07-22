@@ -74,8 +74,13 @@ Provide a friendly conversational response explaining what you did in 'response'
           const updated = await this.store.updateRule(index, text);
           if (!updated) return "I couldn't find a rule at that index to update.";
       }
+    } else if (result.action === "list") {
+      const currentRules = await this.store.getRules();
+      return currentRules.length === 0
+        ? result.response + "\n\n(No rules currently saved.)"
+        : result.response + "\n\n" + currentRules.map((r, i) => `${i}: ${r}`).join('\n');
     }
-    
+
     return result.response;
   }
 }

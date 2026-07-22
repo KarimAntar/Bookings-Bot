@@ -19,6 +19,8 @@ mock.module("@google/genai", () => {
             return { text: JSON.stringify({ action: "delete", payload: "0", response: "Deleted rule." }) };
           } else if (text.includes("update")) {
             return { text: JSON.stringify({ action: "update", payload: "0|Updated rule", response: "Updated rule." }) };
+          } else if (text.includes("list")) {
+            return { text: JSON.stringify({ action: "list", response: "Here are the rules:" }) };
           }
           return { text: JSON.stringify({ action: "unknown", response: "Unknown." }) };
         })
@@ -71,5 +73,33 @@ describe("RuleManager", () => {
     const response = await manager.handleAdminMessage("Please update rule 0");
     expect(response).toBe("Updated rule.");
     expect(store.updateRule).toHaveBeenCalledWith(0, "Updated rule");
+  });
+
+  test("lists rules with existing rules", async () => {
+    const store = {
+      getRules: async () => ["Rule 1", "Rule 2"],
+      addRule: mock().mockResolvedValue(undefined),
+      deleteRule: mock().mockResolvedValue(true),
+      updateRule: mock().mockResolvedValue(true)
+    };
+
+    const manager = new RuleManager("fake-api-key", "gemini-3.5-flash-lite", store as unknown as RuleStore);
+
+    const response = await manager.handleAdminMessage("Please list rules");
+    expect(response).toBe("Here are the rules:\n\n0: Rule 1\n1: Rule 2");
+  });
+
+  test("lists rules with empty rules", async () => {
+    const store = {
+      getRules: async () => [],
+      addRule: mock().mockResolvedValue(undefined),
+      deleteRule: mock().mockResolvedValue(true),
+      updateRule: mock().mockResolvedValue(true)
+    };
+
+    const manager = new RuleManager("fake-api-key", "gemini-3.5-flash-lite", store as unknown as RuleStore);
+
+    const response = await manager.handleAdminMessage("Please list rules");
+    expect(response).toBe("Here are the rules:\n\n(No rules currently saved.)");
   });
 });
