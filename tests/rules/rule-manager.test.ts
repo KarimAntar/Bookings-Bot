@@ -9,6 +9,10 @@ mock.module("@google/genai", () => {
       models = {
         generateContent: mock().mockImplementation(async (req: any) => {
           const text = req.contents[0].parts[0].text;
+          const hasImage = req.contents[0].parts.some((p: any) => p.inlineData);
+          if (hasImage && text.includes("Look at this screenshot")) {
+            return { text: JSON.stringify({ action: "add", payload: "Rule from image", response: "Added rule from image." }) };
+          }
           if (text.includes("add")) {
             return { text: JSON.stringify({ action: "add", payload: "New rule", response: "Added rule." }) };
           } else if (text.includes("delete")) {

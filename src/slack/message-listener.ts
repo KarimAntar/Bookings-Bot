@@ -26,9 +26,15 @@ export function registerMessageListener(app: App, config: AppConfig, reviewServi
     const message = event as SlackMessage;
 
     if (message.channel_type === "im" && message.user && config.adminUserIds.has(message.user) && ruleManager) {
-      if (message.text) {
+      if (message.text || message.files?.length) {
         try {
-          const response = await ruleManager.handleAdminMessage(message.text);
+          let downloadedImages: { mimeType: string, data: Uint8Array }[] | undefined;
+          if (message.files && message.files.length > 0) {
+            const files = selectImageFiles(message.files, config.maxAttachments, config.maxImageBytes);
+            const downloaded = await Promise.all(files.map((file) => downloadSlackImage(file, config.slackBotToken, config.maxImageBytes, config.downloadTimeoutMs)));
+            downloadedImages = downloaded.map(img => ({ mimeType: img.mimeType, data: img.data }));
+          }
+          const response = await ruleManager.handleAdminMessage(message.text || "", downloadedImages);
           await client.chat.postMessage({ channel: message.channel, text: response });
         } catch (error) {
           logger.error({ err: error, channel: message.channel }, "Rule manager failed");

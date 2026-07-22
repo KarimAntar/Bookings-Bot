@@ -18,7 +18,7 @@ export class RuleManager {
     this.client = new GoogleGenAI({ apiKey });
   }
 
-  async handleAdminMessage(message: string): Promise<string> {
+  async handleAdminMessage(message: string, images?: { mimeType: string, data: Uint8Array }[]): Promise<string> {
     const rules = await this.store.getRules();
     const systemPrompt = `You are a helpful assistant that manages booking review rules. 
 Current rules:
@@ -32,9 +32,21 @@ Based on the admin's message, determine the action:
 - unknown: for any unrelated conversation.
 Provide a friendly conversational response explaining what you did in 'response'.`;
 
+    const parts: any[] = [{ text: message || "Please process the attached screenshots." }];
+    if (images && images.length > 0) {
+      for (const image of images) {
+        parts.push({
+          inlineData: {
+            mimeType: image.mimeType,
+            data: Buffer.from(image.data).toString("base64")
+          }
+        });
+      }
+    }
+
     const response = await this.client.models.generateContent({
       model: this.model,
-      contents: [{ role: "user", parts: [{ text: message }] }],
+      contents: [{ role: "user", parts }],
       config: {
         systemInstruction: systemPrompt,
         responseMimeType: "application/json",
