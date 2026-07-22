@@ -5,7 +5,12 @@ if ! systemctl is-active --quiet bookings-bot.service; then
   systemctl --no-pager --full status bookings-bot.service >&2 || true
   exit 1
 fi
-logs=$(journalctl -u bookings-bot.service --since "$(systemctl show bookings-bot.service -p ActiveEnterTimestamp --value)" --no-pager)
+invocation_id=$(systemctl show bookings-bot.service --property=InvocationID --value)
+if [[ -z $invocation_id ]]; then
+  printf 'bookings-bot is active, but systemd reported no invocation ID\n' >&2
+  exit 1
+fi
+logs=$(journalctl _SYSTEMD_INVOCATION_ID="$invocation_id" --no-pager)
 if grep -Eq 'Failed to send ping to Slack|WebSocket error|Bookings bot failed to start' <<<"$logs"; then
   printf 'bookings-bot is active, but Slack Socket Mode reported an error\n' >&2
   grep -E 'Failed to send ping to Slack|WebSocket error|Bookings bot failed to start' <<<"$logs" >&2
