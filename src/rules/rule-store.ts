@@ -1,9 +1,19 @@
 import { promises as fs } from "fs";
+import * as path from "path";
 
 export class RuleStore {
   private queue: Promise<void> = Promise.resolve();
 
   constructor(private readonly filepath: string) {}
+
+  private async ensureDir(): Promise<void> {
+    const dir = path.dirname(this.filepath);
+    if (dir !== '.' && dir !== '') {
+      await fs.mkdir(dir, { recursive: true }).catch((err) => {
+        if (err.code !== 'EEXIST') throw err;
+      });
+    }
+  }
 
   async getRules(): Promise<string[]> {
     try {
@@ -18,6 +28,7 @@ export class RuleStore {
     const task = this.queue.then(async () => {
       const rules = await this.getRules();
       rules.push(rule);
+      await this.ensureDir();
       await fs.writeFile(this.filepath, JSON.stringify(rules, null, 2));
     });
     this.queue = task.catch(() => {});
@@ -30,6 +41,7 @@ export class RuleStore {
       const rules = await this.getRules();
       if (index >= 0 && index < rules.length) {
         rules.splice(index, 1);
+        await this.ensureDir();
         await fs.writeFile(this.filepath, JSON.stringify(rules, null, 2));
         result = true;
       }
@@ -45,6 +57,7 @@ export class RuleStore {
       const rules = await this.getRules();
       if (index >= 0 && index < rules.length) {
         rules[index] = rule;
+        await this.ensureDir();
         await fs.writeFile(this.filepath, JSON.stringify(rules, null, 2));
         result = true;
       }
