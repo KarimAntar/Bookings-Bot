@@ -392,18 +392,31 @@
     .operations-side { display: grid; gap: 14px; }
     .operations-side .card { padding: 18px 20px; }
 
-    .pending-link {
+    .repository-links {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 26px;
+    }
+
+    .repository-link {
       display: inline-flex;
       width: fit-content;
-      margin-top: 26px;
       padding: 11px 15px;
-      border: 1px dashed #aab8c5;
+      border: 1px solid var(--blue-700);
       border-radius: 9px;
-      background: #f4f6f8;
-      color: var(--muted);
-      cursor: not-allowed;
+      background: var(--blue-700);
+      color: white;
       font-weight: 700;
       text-decoration: none;
+    }
+
+    .repository-link.secondary {
+      padding: 8px 4px;
+      border-color: transparent;
+      background: transparent;
+      color: var(--blue-700);
+      font-size: 0.82rem;
     }
 
     .next-list {
@@ -538,7 +551,7 @@
       }
       h1, h2, h3, .shot-header, .next-list li { color: #071c33; }
       .slide-number, .flow-step, .module-index { color: #1768ac; }
-      .lede, .card p, .module p, .security-point p, .message p, .shot-row span, .fiction-label, .work-column li, .pending-link {
+      .lede, .card p, .module p, .security-point p, .message p, .shot-row span, .fiction-label, .work-column li {
         color: #40566b;
       }
       .card, .module, .work-column, .security-point, .conversation, .mock-shot, .message, .flow-box, .next-list li {
@@ -554,7 +567,8 @@
       .operations-main h3 { color: #071c33; }
       .operations-main p { color: #15283b; }
       .crop { color: transparent; background: #edf2f6; border: 1px solid #a45b12; }
-      .pending-link { border-color: #7b8c9c; background: #f4f6f8; }
+      .repository-link { border-color: #071c33; background: #1768ac; color: #ffffff; }
+      .repository-link.secondary { border-color: transparent; background: transparent; color: #071c33; }
       .slide:last-child { break-after: auto; page-break-after: auto; }
       .controls, .visually-hidden { display: none; }
     }
@@ -710,8 +724,10 @@
           <div class="flow-box"><span class="flow-step">Service</span><strong>systemd</strong><span>Managed bot process</span></div>
           <div class="flow-box"><span class="flow-step">Workplace</span><strong>Slack</strong><span>Test then pilot</span></div>
         </figure>
-        <!-- biome-ignore lint/a11y/useValidAnchor: The approved pending-repository contract requires an anchor with no href until publication. -->
-        <a class="pending-link" data-repository-status="pending" aria-disabled="true">Repository link pending publication</a>
+        <div class="repository-links">
+          <a class="repository-link" href="https://github.com/KarimAntar/Bookings-Bot" target="_blank" rel="noreferrer" data-repository-status="published">Open private bot repository</a>
+          <a class="repository-link secondary" href="https://github.com/KarimAntar/Bookings-Bot-Presentation" target="_blank" rel="noreferrer" data-repository-status="published">Presentation source</a>
+        </div>
       </section>
 
       <!-- biome-ignore lint/a11y/noRedundantRoles: The approved slide contract explicitly requires role="region" on every semantic section. -->

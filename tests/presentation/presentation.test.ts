@@ -197,10 +197,24 @@ describe("management presentation", () => {
     expect(workProgressColumns.get("Completed")).not.toContain("VM setup");
   });
 
-  test("shows the repository as pending without an active link", () => {
-    expect(html).toContain("Repository link pending publication");
-    expect(html).toMatch(
-      /<a\b(?=[^>]*data-repository-status="pending")(?![^>]*\bhref=)[^>]*>\s*Repository link pending publication\s*<\/a>/i,
-    );
+  test("publishes the exact private bot and presentation repository links", () => {
+    const deploymentSlide =
+      slides.find((slide) => slide.includes('id="slide-11"')) ?? "";
+    const repositoryLinks = [
+      ...deploymentSlide.matchAll(/<a\b[^>]*\bhref="([^"]+)"[^>]*>/gi),
+    ];
+
+    expect(repositoryLinks.map((link) => link[1])).toEqual([
+      "https://github.com/KarimAntar/Bookings-Bot",
+      "https://github.com/KarimAntar/Bookings-Bot-Presentation",
+    ]);
+    expect(repositoryLinks).toHaveLength(2);
+    for (const link of repositoryLinks) {
+      expect(link[0]).toMatch(/\btarget="_blank"/i);
+      expect(link[0]).toMatch(/\brel="noreferrer"/i);
+      expect(link[0]).toMatch(/\bdata-repository-status="published"/i);
+      expect(link[0]).not.toMatch(/\baria-disabled\b/i);
+    }
+    expect(deploymentSlide).not.toMatch(/pending/i);
   });
 });

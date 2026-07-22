@@ -236,6 +236,41 @@ test.skipIf(!browserPath)(
       hash: "#slide-1",
     });
 
+    expect(
+      await evaluate<
+        Array<{
+          href: string;
+          target: string;
+          rel: string;
+          status: string;
+          ariaDisabled: string | null;
+        }>
+      >(
+        `(() => [...document.querySelectorAll('#slide-11 a')].map((link) => ({
+          href: link.href,
+          target: link.target,
+          rel: link.rel,
+          status: link.dataset.repositoryStatus,
+          ariaDisabled: link.getAttribute('aria-disabled'),
+        })))()`,
+      ),
+    ).toEqual([
+      {
+        href: "https://github.com/KarimAntar/Bookings-Bot",
+        target: "_blank",
+        rel: "noreferrer",
+        status: "published",
+        ariaDisabled: null,
+      },
+      {
+        href: "https://github.com/KarimAntar/Bookings-Bot-Presentation",
+        target: "_blank",
+        rel: "noreferrer",
+        status: "published",
+        ariaDisabled: null,
+      },
+    ]);
+
     await evaluate("document.getElementById('next-slide')?.click()");
     await waitFor("location.hash === '#slide-2'");
     expect(
