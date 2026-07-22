@@ -3,11 +3,8 @@ title: Bookings Bot
 emoji: 🏢
 colorFrom: blue
 colorTo: indigo
-sdk: gradio
-sdk_version: 6.20.0
-python_version: '3.12'
-app_file: app.py
+sdk: docker
 pinned: false
 ---
 
-Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
+A Slack bot that reviews booking screenshots using Gemini AI.
