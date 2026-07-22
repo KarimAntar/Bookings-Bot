@@ -4,11 +4,12 @@ import { humanReviewFallback, type ReviewResult } from "../domain/review-result"
 import { DedupeCache } from "../runtime/dedupe-cache";
 import { BoundedSemaphore } from "../runtime/semaphore";
 import type { ReviewService } from "../reviews/review-service";
+import type { RuleManager } from "../rules/rule-manager";
 import { downloadSlackImage, selectImageFiles, type SlackFile } from "./files";
 import { formatReviewResult, terminalReaction } from "./format";
 import { ReviewThreadStore } from "./review-thread-store";
 
-export interface SlackMessage { type: "message"; subtype?: string; channel: string; ts: string; thread_ts?: string; text?: string; bot_id?: string; files?: SlackFile[] }
+export interface SlackMessage { type: "message"; subtype?: string; channel: string; ts: string; thread_ts?: string; text?: string; bot_id?: string; files?: SlackFile[]; channel_type?: string; user?: string }
 export type MessageKind = "root" | "correction" | "ignore";
 export function classifyMessage(message: SlackMessage, activeThread: boolean): MessageKind {
   if (message.bot_id || (message.subtype !== undefined && message.subtype !== "file_share" && message.subtype !== "thread_broadcast")) return "ignore";
@@ -17,12 +18,26 @@ export function classifyMessage(message: SlackMessage, activeThread: boolean): M
 }
 export function isReviewableMessage(message: SlackMessage): boolean { return classifyMessage(message, false) === "root"; }
 
-export function registerMessageListener(app: App, config: AppConfig, reviewService: ReviewService, logger: Logger, store = new ReviewThreadStore(config.maxActiveReviews, config.activeReviewTtlMs)): void {
+export function registerMessageListener(app: App, config: AppConfig, reviewService: ReviewService, logger: Logger, store = new ReviewThreadStore(config.maxActiveReviews, config.activeReviewTtlMs), ruleManager?: RuleManager): void {
   const dedupe = new DedupeCache(config.dedupeTtlMs);
   const queue = new BoundedSemaphore(config.maxConcurrentReviews, config.maxQueuedReviews);
   const threadPasses = new Map<string, Promise<void>>();
   app.event("message", async ({ event, body, client }) => {
     const message = event as SlackMessage;
+
+    if (message.channel_type === "im" && message.user && config.adminUserIds.has(message.user) && ruleManager) {
+      if (message.text) {
+        try {
+          const response = await ruleManager.handleAdminMessage(message.text);
+          await client.chat.postMessage({ channel: message.channel, text: response });
+        } catch (error) {
+          logger.error({ err: error, channel: message.channel }, "Rule manager failed");
+          await client.chat.postMessage({ channel: message.channel, text: "Sorry, I ran into an error processing your rule request." });
+        }
+      }
+      return;
+    }
+
     if (config.allowedChannelIds.size && !config.allowedChannelIds.has(message.channel)) return;
     const rootTs = message.thread_ts ?? message.ts;
     const kind = classifyMessage(message, Boolean(message.thread_ts && store.has(message.channel, rootTs)));

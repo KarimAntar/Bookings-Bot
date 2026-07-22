@@ -28,7 +28,16 @@ describe("parseEnv", () => {
       activeReviewTtlMs: 86_400_000,
       lowConfidenceThreshold: 0.8,
       logLevel: "info",
+      adminUserIds: new Set(),
     });
+  });
+
+  test("trims and parses ADMIN_USER_IDS", () => {
+    const config = parseEnv({
+      ...requiredEnv,
+      ADMIN_USER_IDS: " U123, U456 ",
+    });
+    expect([...config.adminUserIds]).toEqual(["U123", "U456"]);
   });
 
   test("trims, removes blanks, and deduplicates the channel allowlist", () => {

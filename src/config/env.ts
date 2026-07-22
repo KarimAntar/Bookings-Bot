@@ -30,6 +30,7 @@ const EnvSchema = z.object({
   ACTIVE_REVIEW_TTL_MS: integer(1_000, 604_800_000).default(86_400_000),
   LOW_CONFIDENCE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.8),
   LOG_LEVEL: LogLevelSchema.default("info"),
+  ADMIN_USER_IDS: z.string().default(""),
 });
 
 export interface AppConfig {
@@ -49,6 +50,7 @@ export interface AppConfig {
   readonly activeReviewTtlMs: number;
   readonly lowConfidenceThreshold: number;
   readonly logLevel: z.infer<typeof LogLevelSchema>;
+  readonly adminUserIds: ReadonlySet<string>;
 }
 
 export function parseEnv(env: Record<string, string | undefined>): AppConfig {
@@ -75,5 +77,10 @@ export function parseEnv(env: Record<string, string | undefined>): AppConfig {
     activeReviewTtlMs: parsed.ACTIVE_REVIEW_TTL_MS,
     lowConfidenceThreshold: parsed.LOW_CONFIDENCE_THRESHOLD,
     logLevel: parsed.LOG_LEVEL,
+    adminUserIds: new Set(
+      parsed.ADMIN_USER_IDS.split(",")
+        .map((id) => id.trim())
+        .filter(Boolean),
+    ),
   };
 }
