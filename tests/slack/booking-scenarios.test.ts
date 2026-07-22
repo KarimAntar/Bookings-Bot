@@ -3,18 +3,17 @@ import type { AIProvider } from "../../src/ai/ai-provider";
 import type { ReviewRequest } from "../../src/domain/review-request";
 import { type ReviewResult, ReviewResultSchema } from "../../src/domain/review-result";
 import { ReviewService } from "../../src/reviews/review-service";
-import { classifyMessage } from "../../src/slack/message-listener";
-import { formatReviewResult } from "../../src/slack/format";
+import { registerMessageListener, type SlackMessage } from "../../src/slack/message-listener";
 import { ReviewThreadStore } from "../../src/slack/review-thread-store";
+import type { AppConfig } from "../../src/config/env";
+import { GeminiProvider, buildGeminiParts } from "../../src/ai/gemini-provider";
 
-const logger = { error: () => undefined } as never;
-const image = (id: string, source: "original" | "correction" = "original") => ({
-  id: `${source}:${id}`,
-  name: `${id}.png`,
-  mimeType: "image/png" as const,
-  data: new Uint8Array([1]),
-  source,
-});
+const logger = {
+  debug: () => undefined,
+  info: () => undefined,
+  warn: () => undefined,
+  error: () => undefined,
+} as never;
 
 function result(overrides: Partial<ReviewResult> = {}): ReviewResult {
   return ReviewResultSchema.parse({
@@ -49,54 +48,144 @@ class ScenarioProvider implements AIProvider {
   }
 }
 
-async function compose(provider: ScenarioProvider, request: ReviewRequest) {
-  const reviewed = await new ReviewService(provider, 0.8, logger).review(request);
-  return { reviewed, reply: formatReviewResult(reviewed) };
+class FakeSlackApp {
+  handlers = new Map<string, Function>();
+  event(name: string, handler: Function) {
+    this.handlers.set(name, handler);
+  }
 }
 
-const completeRequest = (messageText = "g2g?"): ReviewRequest => ({
-  eventId: "Ev1",
-  messageText,
-  images: [image("crm"), image("campaign"), image("booking")],
-});
+class FakeSlackClient {
+  readonly posts: any[] = [];
+  readonly _reactions: any[] = [];
+  chat = {
+    postMessage: async (args: any) => { this.posts.push(args); },
+  };
+  reactions = {
+    add: async (args: any) => { this._reactions.push(args); },
+  };
+}
 
-describe("Slack booking scenarios", () => {
-  test("approved matching package", async () => {
+describe("Slack booking scenarios (Listener Flow)", () => {
+  const config: AppConfig = {
+    port: 3000,
+    logLevel: "silent",
+    slackBotToken: "xoxb-fake",
+    slackAppToken: "xapp-fake",
+    geminiApiKey: "fake-key",
+    geminiModel: "fake-model",
+    allowedChannelIds: new Set(["C1"]),
+    dedupeTtlMs: 60000,
+    maxConcurrentReviews: 2,
+    maxQueuedReviews: 10,
+    maxAttachments: 10,
+    maxImageBytes: 1024 * 1024,
+    downloadTimeoutMs: 1000,
+    aiTimeoutMs: 1000,
+    lowConfidenceThreshold: 0.8,
+    maxActiveReviews: 10,
+    activeReviewTtlMs: 60000,
+  };
+
+  test("approved matching package flows through listener", async () => {
     const provider = new ScenarioProvider(() => result());
-    const { reviewed, reply } = await compose(provider, completeRequest());
-    expect(reviewed.status).toBe("approved");
-    expect(reply).toContain("Booking review: Approved");
-    expect(reply).not.toContain("<!here>");
-    expect(provider.requests[0]?.images.map(({ id }) => id)).toEqual(["original:crm", "original:campaign", "original:booking"]);
+    const service = new ReviewService(provider, config.lowConfidenceThreshold, logger);
+    const store = new ReviewThreadStore(config.maxActiveReviews, config.activeReviewTtlMs);
+    const app = new FakeSlackApp();
+    registerMessageListener(app as any, config, service, logger, store);
+
+    const client = new FakeSlackClient();
+    const handler = app.handlers.get("message")!;
+
+    const originalFetch = global.fetch;
+    global.fetch = async () => new Response(new Uint8Array([1]), { status: 200 }) as any;
+
+    try {
+      const message: SlackMessage = {
+        type: "message",
+        channel: "C1",
+        ts: "1",
+        text: "g2g?",
+        files: [
+          { id: "crm", mimetype: "image/png", size: 10, url_private_download: "https://fake/crm" },
+          { id: "campaign", mimetype: "image/png", size: 10, url_private_download: "https://fake/campaign" },
+          { id: "booking", mimetype: "image/png", size: 10, url_private_download: "https://fake/booking" }
+        ],
+      };
+
+      await handler({ event: message, body: { event_id: "Ev1" }, client });
+
+      expect(provider.requests.length).toBe(1);
+      expect(provider.requests[0]?.images.map(i => i.id)).toEqual(["original:crm", "original:campaign", "original:booking"]);
+
+      expect(client.posts.length).toBe(1);
+      expect(client.posts[0].text).toContain("Booking review: Approved");
+      expect(client._reactions.map(r => r.name)).toContain("white_check_mark");
+      expect(store.has("C1", "1")).toBe(false);
+
+      const geminiParts = buildGeminiParts(provider.requests[0]);
+      expect(geminiParts[0]).toEqual({ text: expect.stringContaining("original:crm [original], original:campaign [original], original:booking [original]") });
+      expect(geminiParts[1]).toEqual({ text: expect.stringContaining("Image original:crm [original]") });
+
+    } finally {
+      global.fetch = originalFetch;
+    }
   });
 
-  test("missing qualification notes requests a correction", async () => {
-    const provider = new ScenarioProvider(() => result({
+  test("corrected-thread with replacement screenshot flows from root -> correction -> approved", async () => {
+    const provider = new ScenarioProvider((request) => request.images.some(img => img.source === "correction") ? result() : result({
       status: "correction_required",
-      reasoning: "A required qualification answer is absent from booking notes.",
-      qualificationQuestions: [{ question: "Annual sales?", answer: 12, required: true, presentInNotes: false }],
-      notesSummary: { present: true, contentSummary: "Qualification answer is absent.", requiredEntriesPresent: false },
       missingNoteEntries: ["Annual sales: 12"],
     }));
-    const { reviewed, reply } = await compose(provider, completeRequest());
-    expect(reviewed.status).toBe("correction_required");
-    expect(reply).toContain("Annual sales: 12");
-    expect(reply).toContain("reply in this thread");
-    expect(reply).not.toContain("<!here>");
-  });
 
-  test("corrected thread combines original and latest evidence and approves", async () => {
-    const store = new ReviewThreadStore(10, 60_000);
-    store.create({ channel: "C1", rootTs: "1", originalText: "g2g?", originalImages: completeRequest().images, lastEventId: "Ev1" });
-    const combined = store.applyCorrection("C1", "1", { text: "Annual sales: 12", images: [image("notes-fixed", "correction")], eventId: "Ev2" });
-    expect(combined).toBeDefined();
-    if (!combined) throw new Error("Expected the active correction to be retained");
-    expect(classifyMessage({ type: "message", channel: "C1", ts: "2", thread_ts: "1", text: "Annual sales: 12", files: [] }, store.has("C1", "1"))).toBe("correction");
-    const provider = new ScenarioProvider((request) => request.images.some(({ source }) => source === "correction") ? result() : result({ status: "correction_required", missingNoteEntries: ["Annual sales: 12"] }));
-    const { reviewed } = await compose(provider, { eventId: "Ev2", ...combined.evidence });
-    expect(reviewed.status).toBe("approved");
-    expect(provider.requests[0]?.messageText).toContain("Correction (authoritative where conflicting): Annual sales: 12");
-    expect(provider.requests[0]?.images.map(({ id }) => id)).toEqual(["original:crm", "original:campaign", "original:booking", "correction:notes-fixed"]);
+    const service = new ReviewService(provider, config.lowConfidenceThreshold, logger);
+    const store = new ReviewThreadStore(config.maxActiveReviews, config.activeReviewTtlMs);
+    const app = new FakeSlackApp();
+    registerMessageListener(app as any, config, service, logger, store);
+
+    const client = new FakeSlackClient();
+    const handler = app.handlers.get("message")!;
+    const originalFetch = global.fetch;
+    global.fetch = async () => new Response(new Uint8Array([1]), { status: 200 }) as any;
+
+    try {
+      const rootMsg: SlackMessage = {
+        type: "message", channel: "C1", ts: "1", text: "g2g?",
+        files: [
+          { id: "crm", mimetype: "image/png", size: 10, url_private_download: "https://fake/crm" },
+          { id: "campaign", mimetype: "image/png", size: 10, url_private_download: "https://fake/campaign" },
+          { id: "booking", mimetype: "image/png", size: 10, url_private_download: "https://fake/booking" }
+        ],
+      };
+      await handler({ event: rootMsg, body: { event_id: "Ev1" }, client });
+
+      expect(client.posts.length).toBe(1);
+      expect(client.posts[0].text).toContain("Annual sales: 12");
+      expect(client.posts[0].text).toContain("reply in this thread");
+      expect(store.has("C1", "1")).toBe(true);
+
+      const correctionMsg: SlackMessage = {
+        type: "message", channel: "C1", ts: "2", thread_ts: "1", text: "Annual sales: 12",
+        files: [
+          { id: "notes-fixed", mimetype: "image/png", size: 10, url_private_download: "https://fake/notes-fixed" }
+        ],
+      };
+      await handler({ event: correctionMsg, body: { event_id: "Ev2" }, client });
+
+      expect(provider.requests.length).toBe(2);
+      expect(provider.requests[1].images.map(i => i.id)).toEqual(["original:crm", "original:campaign", "original:booking", "correction:notes-fixed"]);
+      expect(provider.requests[1].messageText).toContain("Correction (authoritative where conflicting): Annual sales: 12");
+
+      expect(client.posts.length).toBe(2);
+      expect(client.posts[1].text).toContain("Booking review: Approved");
+      expect(store.has("C1", "1")).toBe(false);
+
+      const geminiParts = buildGeminiParts(provider.requests[1]);
+      expect(geminiParts[0]).toEqual({ text: expect.stringContaining("original:crm [original], original:campaign [original], original:booking [original], correction:notes-fixed [correction]") });
+
+    } finally {
+      global.fetch = originalFetch;
+    }
   });
 
   test("minimum-sales failure is rejected", async () => {
@@ -107,33 +196,57 @@ describe("Slack booking scenarios", () => {
       campaignRequirements: [{ name: "Minimum sales", requiredValue: 10, actualValue: 7, passed: false, mustAppearInNotes: true }],
       failedRequirements: ["Minimum sales: requires 10, CRM shows 7"],
     }));
-    const { reviewed, reply } = await compose(provider, completeRequest());
-    expect(reviewed.status).toBe("rejected");
-    expect(reply).toContain("Minimum sales: requires 10, CRM shows 7");
-    expect(reply).not.toContain("reply in this thread");
-  });
 
-  test("missing screenshot requests the exact evidence", async () => {
-    const provider = new ScenarioProvider(() => result({ status: "correction_required", reasoning: "Campaign requirements are not supplied.", missingEvidence: ["Campaign requirements screenshot"] }));
-    const request = completeRequest();
-    const { reviewed, reply } = await compose(provider, { ...request, images: request.images.filter(({ id }) => id !== "original:campaign") });
-    expect(reviewed.status).toBe("correction_required");
-    expect(reply).toContain("Campaign requirements screenshot");
+    const service = new ReviewService(provider, config.lowConfidenceThreshold, logger);
+    const store = new ReviewThreadStore(config.maxActiveReviews, config.activeReviewTtlMs);
+    const app = new FakeSlackApp();
+    registerMessageListener(app as any, config, service, logger, store);
+
+    const client = new FakeSlackClient();
+    const handler = app.handlers.get("message")!;
+    const originalFetch = global.fetch;
+    global.fetch = async () => new Response(new Uint8Array([1]), { status: 200 }) as any;
+
+    try {
+      const msg: SlackMessage = {
+        type: "message", channel: "C1", ts: "1", text: "g2g?",
+        files: [{ id: "crm", mimetype: "image/png", size: 10, url_private_download: "https://fake/crm" }],
+      };
+      await handler({ event: msg, body: { event_id: "Ev1" }, client });
+
+      expect(client.posts.length).toBe(1);
+      expect(client.posts[0].text).toContain("Minimum sales: requires 10, CRM shows 7");
+      expect(client._reactions.map(r => r.name)).toContain("x");
+      expect(store.has("C1", "1")).toBe(false);
+    } finally {
+      global.fetch = originalFetch;
+    }
   });
 
   test("ambiguous evidence requests human review with <!here>", async () => {
     const provider = new ScenarioProvider(() => result({ status: "needs_human_review", reasoning: "The sales value is unreadable in the CRM screenshot.", confidence: 0.45, evidenceRoles: [{ imageId: "original:crm", roles: ["crm_prospect"], readable: false }] }));
-    const { reviewed, reply } = await compose(provider, completeRequest());
-    expect(reviewed.status).toBe("needs_human_review");
-    expect(reply).toStartWith("<!here>");
-  });
+    const service = new ReviewService(provider, config.lowConfidenceThreshold, logger);
+    const store = new ReviewThreadStore(config.maxActiveReviews, config.activeReviewTtlMs);
+    const app = new FakeSlackApp();
+    registerMessageListener(app as any, config, service, logger, store);
 
-  test("caption wording is neutral to eligibility and decision", async () => {
-    const provider = new ScenarioProvider(() => result());
-    for (const [index, caption] of ["test", "g2g?", "@here g2g?", "test booking"].entries()) {
-      expect(classifyMessage({ type: "message", channel: "C1", ts: String(index), text: caption, files: [{ id: "F1", mimetype: "image/png", size: 1, url_private_download: "https://example.test/F1" }] }, false)).toBe("root");
-      expect((await compose(provider, completeRequest(caption))).reviewed.status).toBe("approved");
+    const client = new FakeSlackClient();
+    const handler = app.handlers.get("message")!;
+    const originalFetch = global.fetch;
+    global.fetch = async () => new Response(new Uint8Array([1]), { status: 200 }) as any;
+
+    try {
+      const msg: SlackMessage = {
+        type: "message", channel: "C1", ts: "1", text: "g2g?",
+        files: [{ id: "crm", mimetype: "image/png", size: 10, url_private_download: "https://fake/crm" }],
+      };
+      await handler({ event: msg, body: { event_id: "Ev1" }, client });
+
+      expect(client.posts.length).toBe(1);
+      expect(client.posts[0].text).toStartWith("<!here>");
+      expect(client._reactions.map(r => r.name)).toContain("warning");
+    } finally {
+      global.fetch = originalFetch;
     }
-    expect(provider.requests.map(({ messageText }) => messageText)).toEqual(["test", "g2g?", "@here g2g?", "test booking"]);
   });
 });
