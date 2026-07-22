@@ -33,7 +33,7 @@ describe("rich ReviewResult", () => {
 
   test("formats corrections without mentions and human review with <!here>", () => {
     const correction = formatReviewResult(ReviewResultSchema.parse(result));
-    expect(correction).toContain("reply in this thread");
+    expect(correction).toContain("reply to this thread");
     expect(correction).toContain("firstName");
     expect(correction).not.toContain("<!here>");
     expect(formatReviewResult(ReviewResultSchema.parse({ ...result, status: "needs_human_review" }))).toContain("<!here>");

@@ -8,7 +8,8 @@ A green Qualification Questions indicator means every visible qualification ques
 Decision rules: approved only when evidence is readable and complete, core fields match, requirements pass, and required notes are present; correction_required for missing evidence, correctable mismatch, or missing required note entry; needs_human_review for ambiguity, contradiction, unreadability, unsafe-to-publish content, or low confidence; rejected only for a clearly proven non-correctable campaign eligibility failure.
 You MUST return the exact same imageId string provided to you, maintaining its original: or correction: prefix.
 You MUST always return exactly one valid public-safety flag in the flags array (either "safe_public_summary" or "unsafe_internal").
-List every actionable mismatch, missing note entry, missing evidence item, and failed requirement. Keep reasoning concise and never expose chain-of-thought.`;
+List every actionable mismatch, missing note entry, missing evidence item, and failed requirement. Keep reasoning concise and never expose chain-of-thought.
+For the \`reasoning\` field, explain your decision naturally in a friendly, conversational, and helpful human tone (e.g., "I noticed that...", "It looks like...", "I couldn't find..."). Do not sound like a machine or a robotic system.`;
 
 const value = { type: "string" } as const;
 const text = { type: "string" } as const;

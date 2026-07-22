@@ -7,12 +7,12 @@ const bullets = (heading: string, values: readonly string[]) => values.length ? 
 
 export function formatReviewResult(result: ReviewResult): string {
   if (!result.flags.includes("safe_public_summary")) {
-    return "<!here> *Booking review: Needs human review*\nAutomated review output could not be shared safely.";
+    return "<!here> *Hmm, I need a second pair of eyes on this one.*\nAutomated review output could not be shared safely.";
   }
-  const heading = { approved: "Approved", correction_required: "Correction required", needs_human_review: "Needs human review", rejected: "Rejected" }[result.status];
+  const heading = { approved: "All good! 🎉 Booking approved.", correction_required: "Hey there! 👋 I need a quick fix before I can approve this.", needs_human_review: "Hmm, I need a second pair of eyes on this one.", rejected: "I can't approve this one based on the campaign rules." }[result.status];
   const mismatches = result.mismatches.map(({ field, crmValue, bookingValue }) => `${field}: CRM is “${String(crmValue)}”; booking is “${String(bookingValue)}”`);
   const mention = result.status === "needs_human_review" ? "<!here> " : "";
   const details = `${bullets("Mismatches", mismatches)}${bullets("Missing note entries", result.missingNoteEntries)}${bullets("Missing evidence", result.missingEvidence)}${bullets("Failed requirements", result.failedRequirements)}`;
-  const instruction = result.status === "correction_required" ? "\nPlease reply in this thread with updated text and/or screenshots. Text can clarify booking values but cannot replace required screenshot evidence." : "";
-  return `${mention}*Booking review: ${heading}*\n${escapeSlack(result.reasoning)}${details}${instruction}`;
+  const instruction = result.status === "correction_required" ? "\nJust reply to this thread with the missing screenshots or info and I'll take another look!" : "";
+  return `${mention}*${heading}*\n${escapeSlack(result.reasoning)}${details}${instruction}`;
 }

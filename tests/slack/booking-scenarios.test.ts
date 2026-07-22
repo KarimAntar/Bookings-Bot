@@ -119,7 +119,7 @@ describe("Slack booking scenarios (Listener Flow)", () => {
       expect(provider.requests[0]?.images.map(i => i.id)).toEqual(["original:crm", "original:campaign", "original:booking"]);
 
       expect(client.posts.length).toBe(1);
-      expect(client.posts[0]?.text).toContain("Booking review: Approved");
+      expect(client.posts[0]?.text).toContain("All good! 🎉 Booking approved.");
       expect(client._reactions.map(r => r.name)).toContain("white_check_mark");
       expect(store.has("C1", "1")).toBe(false);
 
@@ -163,7 +163,7 @@ describe("Slack booking scenarios (Listener Flow)", () => {
 
       expect(client.posts.length).toBe(1);
       expect(client.posts[0]?.text).toContain("Annual sales: 12");
-      expect(client.posts[0]?.text).toContain("reply in this thread");
+      expect(client.posts[0]?.text).toContain("reply to this thread");
       expect(store.has("C1", "1")).toBe(true);
 
       const correctionMsg: SlackMessage = {
@@ -179,7 +179,7 @@ describe("Slack booking scenarios (Listener Flow)", () => {
       expect(provider.requests[1]?.messageText).toContain("Correction (authoritative where conflicting): Annual sales: 12");
 
       expect(client.posts.length).toBe(2);
-      expect(client.posts[1]?.text).toContain("Booking review: Approved");
+      expect(client.posts[1]?.text).toContain("All good! 🎉 Booking approved.");
       expect(store.has("C1", "1")).toBe(false);
 
       const req1 = provider.requests[1];
