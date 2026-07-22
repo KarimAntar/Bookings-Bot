@@ -30,6 +30,18 @@
 
     html, body { min-height: 100%; }
 
+    .visually-hidden {
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      overflow: hidden;
+      position: absolute;
+      clip: rect(0 0 0 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+
     body {
       margin: 0;
       background: linear-gradient(145deg, #e8eff6 0%, #f7fafc 48%, #e6f3ef 100%);
@@ -202,7 +214,7 @@
     }
 
     .card.standard { border-color: rgba(35, 164, 123, 0.45); background: var(--green-100); }
-    .card.standard .card-mark { background: var(--green-500); color: white; }
+    .card.standard .card-mark { background: var(--green-700); color: white; }
 
     .flow {
       display: grid;
@@ -466,16 +478,30 @@
     }
 
     @media (max-width: 760px) {
-      .presentation-shell { padding: 12px; }
-      .deck, .slide { min-height: calc(100vh - 112px); }
+      .presentation-shell { padding: 12px 12px calc(136px + env(safe-area-inset-bottom)); }
+      .deck, .slide { min-height: calc(100vh - 24px); }
       .slide { padding: 30px 22px; border-radius: 14px; }
       h1, h2 { font-size: clamp(2rem, 11vw, 3.2rem); }
       .card-grid, .flow, .module-grid, .work-grid, .security-grid, .thread, .operations { grid-template-columns: 1fr; }
       .flow-box { min-height: 112px; }
       .card-mark { margin-bottom: 12px; }
-      .controls { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .controls {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        position: fixed;
+        z-index: 20;
+        right: 12px;
+        bottom: calc(12px + env(safe-area-inset-bottom));
+        left: 12px;
+        width: auto;
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 10px 30px rgba(7, 28, 51, 0.2);
+      }
       .deck-status { grid-column: 1 / -1; grid-row: 1; }
-      .control-button { min-width: 0; }
+      .control-button { min-width: 0; min-height: 48px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -486,20 +512,51 @@
 
     @media print {
       @page { size: landscape; margin: 0; }
-      body { background: white; }
+      *, *::before, *::after {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      html, body { width: 100%; height: auto; background: #ffffff; }
       .presentation-shell { display: block; padding: 0; }
       .deck { width: 100%; }
       .slide, .slide.active {
         display: flex;
+        width: 100%;
         min-height: 100vh;
-        border: 0;
+        color: #15283b;
+        background: #ffffff;
+        border: 1px solid #cfdae5;
         border-radius: 0;
         box-shadow: none;
+        animation: none;
         break-after: page;
         page-break-after: always;
       }
+      .slide::before {
+        background: #123b66;
+        border-bottom: 2px solid #071c33;
+      }
+      h1, h2, h3, .shot-header, .next-list li { color: #071c33; }
+      .slide-number, .flow-step, .module-index { color: #1768ac; }
+      .lede, .card p, .module p, .security-point p, .message p, .shot-row span, .fiction-label, .work-column li, .pending-link {
+        color: #40566b;
+      }
+      .card, .module, .work-column, .security-point, .conversation, .mock-shot, .message, .flow-box, .next-list li {
+        background: #fbfdff;
+        border-color: #9fb0c0;
+        box-shadow: none;
+      }
+      .eyebrow, .card-mark, .check, .progress-track { background: #e8f3fb; border: 1px solid #1768ac; }
+      .status-pill, .note, .card.standard { background: #e5f6f0; border: 1px solid #16785a; }
+      .card.standard .card-mark { background: #e8f3fb; color: #071c33; border-color: #16785a; }
+      .work-column h3, .operations-main, .next-list li::before { background: #e8f3fb; color: #071c33; border: 1px solid #071c33; }
+      .work-column:nth-child(2) h3, .work-column:nth-child(3) h3 { background: #e8f3fb; }
+      .operations-main h3 { color: #071c33; }
+      .operations-main p { color: #15283b; }
+      .crop { color: transparent; background: #edf2f6; border: 1px solid #a45b12; }
+      .pending-link { border-color: #7b8c9c; background: #f4f6f8; }
       .slide:last-child { break-after: auto; page-break-after: auto; }
-      .controls { display: none; }
+      .controls, .visually-hidden { display: none; }
     }
   </style>
 </head>
@@ -560,10 +617,10 @@
         <h2>Example Review</h2>
         <p class="lede">The bot does not guess when an important value is not visible.</p>
         <div class="thread">
-          <section class="conversation" aria-label="Fictional Slack thread">
+          <article class="conversation" aria-label="Fictional Slack thread">
             <div class="message"><strong>Booking agent</strong><p>Please review booking BK-1048.</p></div>
             <div class="message bot"><strong class="review-result">Needs Human Review</strong><p>The payment value is cropped. Please check the source before deciding.</p></div>
-          </section>
+          </article>
           <div class="mock-shot" role="img" aria-label="Generic invented booking screenshot with a cropped payment value">
             <div class="shot-header"><span>Booking summary</span><span>BK-1048</span></div>
             <div class="shot-row"><span>Route</span><strong>North Station → Central</strong></div>
@@ -672,10 +729,11 @@
       </section>
     </div>
 
+    <p class="visually-hidden" id="slide-announcement" role="status" aria-live="polite" aria-atomic="true">Slide 1 of 12: Bookings Bot</p>
     <nav class="controls" aria-label="Presentation controls">
       <button class="control-button" id="previous-slide" type="button" aria-label="Go to previous slide">Previous</button>
       <div class="deck-status">
-        <span id="slide-counter" aria-live="polite" aria-atomic="true">1 / 12</span>
+        <span id="slide-counter">1 / 12</span>
         <div class="progress-track" role="progressbar" aria-label="Presentation progress" aria-valuemin="1" aria-valuemax="12" aria-valuenow="1">
           <div id="slide-progress"></div>
         </div>
@@ -690,10 +748,11 @@
       const previousButton = document.getElementById("previous-slide");
       const nextButton = document.getElementById("next-slide");
       const counter = document.getElementById("slide-counter");
+      const announcement = document.getElementById("slide-announcement");
       const progress = document.getElementById("slide-progress");
       const progressBar = progress?.parentElement;
 
-      if (!slides.length || !previousButton || !nextButton || !counter || !progress) {
+      if (!slides.length || !previousButton || !nextButton || !counter || !announcement || !progress) {
         return;
       }
 
@@ -710,7 +769,10 @@
         });
 
         const visibleNumber = currentIndex + 1;
+        const currentSlide = slides[currentIndex];
+        const title = currentSlide?.querySelector("h1, h2")?.textContent?.trim() ?? "Untitled slide";
         counter.textContent = `${visibleNumber} / ${slides.length}`;
+        announcement.textContent = `Slide ${visibleNumber} of ${slides.length}: ${title}`;
         progress.style.width = `${(visibleNumber / slides.length) * 100}%`;
         previousButton.disabled = currentIndex === 0;
         nextButton.disabled = currentIndex === slides.length - 1;
