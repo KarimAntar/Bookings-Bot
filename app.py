@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 import gradio as gr
 import threading
 import time
+import sys
 
 # Load environment variables
 load_dotenv()
@@ -146,8 +147,12 @@ if app:
 
 def start_slack_bot():
     """Starts the Slack SocketMode handler in a background thread"""
+    # Wait for gradio to fully start
+    time.sleep(5)
     if app and SLACK_APP_TOKEN:
         try:
+            print("Starting Slack SocketMode...")
+            sys.stdout.flush()
             handler = SocketModeHandler(app, SLACK_APP_TOKEN)
             handler.start()
         except Exception as e:
@@ -178,13 +183,10 @@ def create_ui():
     return demo
 
 if __name__ == "__main__":
-    # Launch Gradio on the main thread FIRST
-    demo = create_ui()
+    # Start the Slack bot in a background thread
+    slack_thread = threading.Thread(target=start_slack_bot, daemon=True)
+    slack_thread.start()
     
-    # Start the Slack bot in a background thread only if tokens are present
-    if app and SLACK_APP_TOKEN:
-        slack_thread = threading.Thread(target=start_slack_bot, daemon=True)
-        slack_thread.start()
-        print("Booking QA Bot background thread started!")
-        
-    demo.launch(server_name="0.0.0.0", server_port=7860)
+    # Launch Gradio on the main thread
+    demo = create_ui()
+    demo.launch(server_name="0.0.0.0", server_port=7860, prevent_thread_lock=False)
