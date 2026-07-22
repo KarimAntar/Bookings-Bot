@@ -8,7 +8,7 @@ A green Qualification Questions indicator means every visible qualification ques
 Decision rules: approved only when evidence is readable and complete, core fields match, requirements pass, and required notes are present; correction_required for missing evidence, correctable mismatch, or missing required note entry; needs_human_review for ambiguity, contradiction, unreadability, unsafe-to-publish content, or low confidence; rejected only for a clearly proven non-correctable campaign eligibility failure.
 List every actionable mismatch, missing note entry, missing evidence item, and failed requirement. Keep reasoning concise and never expose chain-of-thought.`;
 
-const value = { type: ["string", "number", "boolean", "null"] } as const;
+const value = { anyOf: [{ type: "string" }, { type: "number" }, { type: "boolean" }] } as const;
 const text = { type: "string", minLength: 1, maxLength: 500 } as const;
 const stringArray = { type: "array", maxItems: 50, items: text } as const;
 export const REVIEW_RESPONSE_SCHEMA = {
@@ -18,7 +18,7 @@ export const REVIEW_RESPONSE_SCHEMA = {
     status: { type: "string", enum: ["approved", "correction_required", "needs_human_review", "rejected"] },
     reasoning: { type: "string", minLength: 1, maxLength: 1000 }, confidence: { type: "number", minimum: 0, maximum: 1 },
     evidenceRoles: { type: "array", maxItems: 20, items: { type: "object", additionalProperties: false, required: ["imageId", "roles", "readable"], properties: { imageId: { type: "string", pattern: "^(original|correction):[^\\s]+$", maxLength: 500 }, roles: { type: "array", minItems: 1, maxItems: 7, items: { type: "string", enum: ["crm_prospect", "campaign_requirements", "campaign_script", "qualification_questions", "booking_form", "booking_notes", "unknown"] } }, readable: { type: "boolean" } } } },
-    crmFields: { type: "object", maxProperties: 50, propertyNames: { type: "string", minLength: 1, maxLength: 100 }, additionalProperties: value }, bookingFields: { type: "object", maxProperties: 50, propertyNames: { type: "string", minLength: 1, maxLength: 100 }, additionalProperties: value },
+    crmFields: { type: "object", maxProperties: 50, additionalProperties: value }, bookingFields: { type: "object", maxProperties: 50, additionalProperties: value },
     campaignRequirements: { type: "array", maxItems: 50, items: { type: "object", additionalProperties: false, required: ["name", "requiredValue", "actualValue", "passed", "mustAppearInNotes"], properties: { name: text, requiredValue: value, actualValue: value, passed: { type: "boolean" }, mustAppearInNotes: { type: "boolean" } } } },
     qualificationQuestions: { type: "array", maxItems: 50, items: { type: "object", additionalProperties: false, required: ["question", "answer", "required", "presentInNotes"], properties: { question: text, answer: value, required: { type: "boolean" }, presentInNotes: { type: "boolean" } } } },
     notesSummary: { type: "object", additionalProperties: false, required: ["present", "contentSummary", "requiredEntriesPresent"], properties: { present: { type: "boolean" }, contentSummary: text, requiredEntriesPresent: { type: "boolean" } } },
