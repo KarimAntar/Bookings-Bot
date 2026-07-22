@@ -84,6 +84,7 @@ describe("Slack booking scenarios (Listener Flow)", () => {
     aiTimeoutMs: 1000,
     lowConfidenceThreshold: 0.8,
     maxActiveReviews: 10,
+    adminUserIds: new Set<string>(),
     activeReviewTtlMs: 60000,
   };
 

@@ -4,7 +4,7 @@ import { registerMessageListener } from "../../src/slack/message-listener";
 import { ReviewThreadStore } from "../../src/slack/review-thread-store";
 import { formatReviewResult } from "../../src/slack/format";
 
-const config = { slackBotToken:"xoxb-secret", slackAppToken:"xapp-secret", geminiApiKey:"secret-key-1", geminiModel:"model", allowedChannelIds:new Set<string>(), maxImageBytes:100, maxAttachments:4, downloadTimeoutMs:1000, aiTimeoutMs:1000, maxConcurrentReviews:1, maxQueuedReviews:0, dedupeTtlMs:1000, maxActiveReviews:10, activeReviewTtlMs:1000, lowConfidenceThreshold:.8, logLevel:"silent" as const };
+const config = { slackBotToken:"xoxb-secret", slackAppToken:"xapp-secret", geminiApiKey:"secret-key-1", geminiModel:"model", allowedChannelIds:new Set<string>(), maxImageBytes:100, maxAttachments:4, downloadTimeoutMs:1000, aiTimeoutMs:1000, maxConcurrentReviews:1, maxQueuedReviews:0, dedupeTtlMs:1000, maxActiveReviews:10,adminUserIds:new Set<string>(), activeReviewTtlMs:1000, lowConfidenceThreshold:.8, logLevel:"silent" as const };
 const file = { id:"F1", name:"one.png", mimetype:"image/png", size:1, url_private_download:"data:image/png;base64,AQ==" };
 const result = (status: "approved"|"correction_required"|"needs_human_review"|"rejected") => ({ status, reasoning:"Unsafe <@U1> & <!channel>", confidence:.9, evidenceRoles:[{imageId:"original:F1",roles:["booking_form" as const],readable:true}], crmFields:{}, bookingFields:{}, campaignRequirements:[], qualificationQuestions:[], notesSummary:{present:true,contentSummary:"Name <script>",requiredEntriesPresent:true}, mismatches:[], missingNoteEntries:[], missingEvidence:[], failedRequirements:[], flags:["safe_public_summary"] });
 

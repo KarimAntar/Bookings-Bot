@@ -3,7 +3,7 @@ import { expect, test } from "bun:test";
 import { registerMessageListener } from "../../src/slack/message-listener";
 import { ReviewThreadStore } from "../../src/slack/review-thread-store";
 
-const config = { slackBotToken:"xoxb-secret", slackAppToken:"xapp-secret", geminiApiKey:"secret-key-1", geminiModel:"model", allowedChannelIds:new Set<string>(), maxImageBytes:100, maxAttachments:4, downloadTimeoutMs:1000, aiTimeoutMs:1000, maxConcurrentReviews:3, maxQueuedReviews:3, dedupeTtlMs:1000, maxActiveReviews:10, activeReviewTtlMs:1000, lowConfidenceThreshold:.8, logLevel:"silent" as const };
+const config = { slackBotToken:"xoxb-secret", slackAppToken:"xapp-secret", geminiApiKey:"secret-key-1", geminiModel:"model", allowedChannelIds:new Set<string>(), maxImageBytes:100, maxAttachments:4, downloadTimeoutMs:1000, aiTimeoutMs:1000, maxConcurrentReviews:3, maxQueuedReviews:3, dedupeTtlMs:1000, maxActiveReviews:10,adminUserIds:new Set<string>(), activeReviewTtlMs:1000, lowConfidenceThreshold:.8, logLevel:"silent" as const };
 const file = (id: string) => ({ id, name:`${id}.png`, mimetype:"image/png", size:1, url_private_download:"data:image/png;base64,AQ==" });
 const correction = { status:"correction_required" as const, reasoning:"Please correct.", confidence:.9, evidenceRoles:[{imageId:"original:F1",roles:["booking_form" as const],readable:true}], crmFields:{}, bookingFields:{}, campaignRequirements:[], qualificationQuestions:[], notesSummary:{present:true,contentSummary:"Details present.",requiredEntriesPresent:true}, mismatches:[], missingNoteEntries:[], missingEvidence:["Updated booking"], failedRequirements:[], flags:["safe_public_summary"] };
 

@@ -25,14 +25,14 @@ mock.module("@google/genai", () => {
 
 describe("RuleManager", () => {
   test("adds a rule and returns response", async () => {
-    const store: RuleStore = {
+    const store = {
       getRules: async () => [],
       addRule: mock().mockResolvedValue(undefined),
       deleteRule: mock().mockResolvedValue(true),
       updateRule: mock().mockResolvedValue(true)
     };
 
-    const manager = new RuleManager("fake-api-key", "gemini-3.5-flash-lite", store);
+    const manager = new RuleManager("fake-api-key", "gemini-3.5-flash-lite", store as unknown as RuleStore);
     
     const response = await manager.handleAdminMessage("Please add a rule");
     expect(response).toBe("Added rule.");
@@ -40,14 +40,14 @@ describe("RuleManager", () => {
   });
 
   test("deletes a rule and returns response", async () => {
-    const store: RuleStore = {
+    const store = {
       getRules: async () => ["Rule 1"],
       addRule: mock().mockResolvedValue(undefined),
       deleteRule: mock().mockResolvedValue(true),
       updateRule: mock().mockResolvedValue(true)
     };
 
-    const manager = new RuleManager("fake-api-key", "gemini-3.5-flash-lite", store);
+    const manager = new RuleManager("fake-api-key", "gemini-3.5-flash-lite", store as unknown as RuleStore);
     
     const response = await manager.handleAdminMessage("Please delete rule 0");
     expect(response).toBe("Deleted rule.");
@@ -55,14 +55,14 @@ describe("RuleManager", () => {
   });
 
   test("updates a rule and returns response", async () => {
-    const store: RuleStore = {
+    const store = {
       getRules: async () => ["Rule 1"],
       addRule: mock().mockResolvedValue(undefined),
       deleteRule: mock().mockResolvedValue(true),
       updateRule: mock().mockResolvedValue(true)
     };
 
-    const manager = new RuleManager("fake-api-key", "gemini-3.5-flash-lite", store);
+    const manager = new RuleManager("fake-api-key", "gemini-3.5-flash-lite", store as unknown as RuleStore);
     
     const response = await manager.handleAdminMessage("Please update rule 0");
     expect(response).toBe("Updated rule.");
