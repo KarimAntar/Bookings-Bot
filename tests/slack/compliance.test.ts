@@ -21,10 +21,10 @@ function harness(review: (request: unknown) => Promise<ReturnType<typeof result>
 describe("actual Slack listener",()=>{
   test("creates a root session and applies a text-only correction using original evidence",async()=>{
     const requests:any[]=[]; const h=harness(async (request:any)=>{requests.push(request); return result("correction_required");});
-    await h.handler({event:{type:"message",channel:"C",ts:"1",text:"root",files:[file]},body:{event_id:"E1"},client:h.client});
+    await h.handler({event:{type:"message",channel:"C",ts:"1",text:"root",files:[{...file,id:"F1"},{...file,id:"F2"},{...file,id:"F3"}]},body:{event_id:"E1"},client:h.client});
     await h.handler({event:{type:"message",channel:"C",ts:"2",thread_ts:"1",text:"correct phone"},body:{event_id:"E2"},client:h.client});
     expect(requests).toHaveLength(2);
-    expect(requests[1].images.map((x:any)=>x.id)).toEqual(["original:F1"]);
+    expect(requests[1].images.map((x:any)=>x.id)).toEqual(["original:F1","original:F2","original:F3"]);
     expect(requests[1].messageText).toContain("correct phone");
     expect(h.posts).toHaveLength(2);
   });

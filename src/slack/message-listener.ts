@@ -54,7 +54,26 @@ export function registerMessageListener(app: App, config: AppConfig, reviewServi
               ? store.setOriginalEvidence(message.channel, rootTs, message.text ?? "", images)
               : store.applyCorrection(message.channel, rootTs, { text: message.text ?? "", images, eventId }, revision);
             if (!session || session.revision !== revision) return;
-            result = await reviewService.review({ eventId, messageText: session.evidence.messageText, images: session.evidence.images });
+            if (session.evidence.images.length < 3) {
+              result = {
+                status: "correction_required",
+                reasoning: "Not enough screenshots provided.",
+                confidence: 1,
+                evidenceRoles: [],
+                crmFields: {},
+                bookingFields: {},
+                campaignRequirements: [],
+                qualificationQuestions: [],
+                notesSummary: { present: false, contentSummary: "None", requiredEntriesPresent: false },
+                mismatches: [],
+                missingNoteEntries: [],
+                missingEvidence: ["Please send all screenshots (minimum 3 required)."],
+                failedRequirements: [],
+                flags: ["safe_public_summary"]
+              };
+            } else {
+              result = await reviewService.review({ eventId, messageText: session.evidence.messageText, images: session.evidence.images });
+            }
           } catch (error) {
             if (kind === "root") store.close(message.channel, rootTs);
             logger.error({ err: error, eventId, channel: message.channel, rootTs, kind }, "Slack submission processing failed");

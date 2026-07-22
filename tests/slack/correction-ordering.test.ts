@@ -21,7 +21,7 @@ test("creates pending roots before awaits and serializes corrections without sta
   const review=async(request:any)=>{requests.push(request); return requests.length===1 ? first.promise : second.promise;};
   registerMessageListener(app,config,{review} as any,{debug(){},error(){},warn(){}} as any,store);
 
-  const root=handler({event:{type:"message",channel:"C",ts:"1",text:"root",files:[file("F1")]},body:{event_id:"E1"},client});
+  const root=handler({event:{type:"message",channel:"C",ts:"1",text:"root",files:[file("F1"),file("F2"),file("F3")]},body:{event_id:"E1"},client});
   await Bun.sleep(10);
   expect(store.has("C","1")).toBe(true);
   const reply=handler({event:{type:"message",channel:"C",ts:"2",thread_ts:"1",text:"latest correction"},body:{event_id:"E2"},client});
