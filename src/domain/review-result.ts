@@ -19,7 +19,7 @@ export const ReviewResultSchema = z.object({
   confidence: z.number().min(0).max(1),
   extractedFields: z.record(z.string(), ExtractedFieldValueSchema),
   flags: z.array(z.string().trim().min(1).max(100)).max(50),
-});
+}).strict();
 
 export type ReviewStatus = z.infer<typeof ReviewStatusSchema>;
 export type ReviewResult = z.infer<typeof ReviewResultSchema>;

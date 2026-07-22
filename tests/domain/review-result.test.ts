@@ -33,6 +33,19 @@ describe("ReviewResultSchema", () => {
     });
   });
 
+  test("rejects unknown top-level provider fields", () => {
+    expect(() =>
+      ReviewResultSchema.parse({
+        status: "approved",
+        reasoning: "Booking details match.",
+        confidence: 0.95,
+        extractedFields: {},
+        flags: [],
+        providerMetadata: "must not be accepted",
+      }),
+    ).toThrow();
+  });
+
   test("rejects confidence outside zero through one", () => {
     expect(() =>
       ReviewResultSchema.parse({
