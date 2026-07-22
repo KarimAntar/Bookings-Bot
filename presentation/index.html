@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Bookings Bot management presentation">
+  <title>Bookings Bot | Management Presentation</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --navy-950: #071c33;
+      --navy-900: #0b2748;
+      --navy-800: #123b66;
+      --blue-700: #1768ac;
+      --blue-500: #2d8bd5;
+      --blue-100: #e8f3fb;
+      --green-700: #16785a;
+      --green-500: #23a47b;
+      --green-100: #e5f6f0;
+      --ink: #15283b;
+      --muted: #5c6f82;
+      --line: #cfdae5;
+      --surface: #ffffff;
+      --warning: #a45b12;
+      --shadow: 0 24px 70px rgba(7, 28, 51, 0.16);
+      --radius: 20px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { min-height: 100%; }
+
+    body {
+      margin: 0;
+      background: linear-gradient(145deg, #e8eff6 0%, #f7fafc 48%, #e6f3ef 100%);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+
+    button, a { font: inherit; }
+
+    .presentation-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      gap: 18px;
+      padding: 24px;
+    }
+
+    .deck {
+      width: min(1180px, 100%);
+      min-height: min(720px, calc(100vh - 126px));
+      margin: auto;
+      position: relative;
+    }
+
+    .slide {
+      display: none;
+      min-height: min(720px, calc(100vh - 126px));
+      padding: clamp(34px, 5vw, 70px);
+      overflow: hidden;
+      position: relative;
+      background: var(--surface);
+      border: 1px solid rgba(18, 59, 102, 0.12);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .slide::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 7px;
+      background: linear-gradient(90deg, var(--navy-800), var(--blue-500), var(--green-500));
+    }
+
+    .slide.active {
+      display: flex;
+      flex-direction: column;
+      animation: slide-in 220ms ease-out;
+    }
+
+    @keyframes slide-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .slide-number {
+      margin: 0 0 22px;
+      color: var(--blue-700);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1, h2 {
+      max-width: 880px;
+      color: var(--navy-950);
+      font-size: clamp(2.1rem, 4.6vw, 4.4rem);
+      line-height: 1.06;
+      letter-spacing: -0.035em;
+    }
+
+    h1 { margin-bottom: 20px; }
+    h2 { margin-bottom: 14px; }
+
+    h3 {
+      margin-bottom: 8px;
+      color: var(--navy-900);
+      font-size: 1.05rem;
+      line-height: 1.25;
+    }
+
+    .lede {
+      max-width: 800px;
+      margin-bottom: 32px;
+      color: var(--muted);
+      font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+    }
+
+    .title-slide {
+      justify-content: center;
+      background:
+        radial-gradient(circle at 88% 15%, rgba(45, 139, 213, 0.14), transparent 27%),
+        radial-gradient(circle at 76% 88%, rgba(35, 164, 123, 0.14), transparent 30%),
+        var(--surface);
+    }
+
+    .eyebrow, .status-pill {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      border-radius: 999px;
+      font-weight: 800;
+    }
+
+    .eyebrow {
+      margin-bottom: 24px;
+      padding: 8px 13px;
+      background: var(--blue-100);
+      color: var(--blue-700);
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .status-pill {
+      gap: 9px;
+      padding: 10px 15px;
+      background: var(--green-100);
+      color: var(--green-700);
+      font-size: 0.9rem;
+    }
+
+    .status-pill::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--green-500);
+    }
+
+    .card-grid, .module-grid, .work-grid, .security-grid {
+      display: grid;
+      gap: 16px;
+      margin-top: auto;
+    }
+
+    .card-grid { grid-template-columns: repeat(4, 1fr); }
+    .module-grid { grid-template-columns: repeat(3, 1fr); }
+    .work-grid { grid-template-columns: repeat(3, 1fr); }
+    .security-grid { grid-template-columns: repeat(2, 1fr); }
+
+    .card, .module, .work-column, .security-point {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fbfdff;
+    }
+
+    .card, .module, .security-point { padding: 22px; }
+
+    .card p, .module p, .security-point p {
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .card-mark {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      margin-bottom: 28px;
+      place-items: center;
+      border-radius: 10px;
+      background: var(--blue-100);
+      color: var(--blue-700);
+      font-weight: 900;
+    }
+
+    .card.standard { border-color: rgba(35, 164, 123, 0.45); background: var(--green-100); }
+    .card.standard .card-mark { background: var(--green-500); color: white; }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 30px;
+      align-items: stretch;
+      margin: auto 0;
+    }
+
+    .flow-box {
+      min-height: 160px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+      padding: 24px;
+      border: 1px solid rgba(23, 104, 172, 0.28);
+      border-radius: 16px;
+      background: linear-gradient(180deg, #ffffff, var(--blue-100));
+      text-align: center;
+    }
+
+    .flow-box:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      z-index: 2;
+      left: calc(100% + 7px);
+      top: 50%;
+      width: 16px;
+      color: var(--blue-700);
+      font-size: 1.5rem;
+      font-weight: 900;
+      transform: translateY(-50%);
+    }
+
+    .flow-step {
+      margin-bottom: 9px;
+      color: var(--blue-700);
+      font-size: 0.74rem;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .flow-box strong { color: var(--navy-900); font-size: 1.08rem; }
+    .flow-box span:last-child { margin-top: 8px; color: var(--muted); font-size: 0.88rem; }
+
+    .note {
+      margin: 26px 0 0;
+      padding: 14px 17px;
+      border-left: 4px solid var(--green-500);
+      background: var(--green-100);
+      color: var(--green-700);
+      font-weight: 700;
+    }
+
+    .thread {
+      display: grid;
+      grid-template-columns: 1fr 1.1fr;
+      gap: 24px;
+      margin-top: auto;
+    }
+
+    .conversation, .mock-shot {
+      min-height: 330px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #f9fbfd;
+    }
+
+    .conversation { padding: 24px; }
+
+    .message {
+      margin-bottom: 20px;
+      padding: 15px 17px;
+      border-radius: 4px 14px 14px 14px;
+      background: white;
+      box-shadow: 0 8px 22px rgba(7, 28, 51, 0.07);
+    }
+
+    .message.bot { border-left: 4px solid var(--warning); }
+    .message p { margin: 6px 0 0; color: var(--muted); }
+    .review-result { color: var(--warning); }
+
+    .mock-shot {
+      padding: 24px;
+      background: linear-gradient(145deg, #eef4f9, #ffffff);
+    }
+
+    .shot-header {
+      display: flex;
+      justify-content: space-between;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+      color: var(--navy-900);
+      font-weight: 800;
+    }
+
+    .shot-row {
+      display: grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 16px;
+      padding: 18px 0;
+      border-bottom: 1px solid #e1e8ef;
+    }
+
+    .shot-row span { color: var(--muted); }
+    .crop {
+      position: relative;
+      overflow: hidden;
+      color: transparent;
+      background: repeating-linear-gradient(135deg, #dbe5ee, #dbe5ee 8px, #edf2f6 8px, #edf2f6 16px);
+      border-radius: 5px;
+    }
+
+    .crop::after {
+      content: "Cropped";
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: var(--warning);
+      font-size: 0.78rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .fiction-label { margin: 16px 0 0; color: var(--muted); font-size: 0.82rem; }
+
+    .module { min-height: 130px; }
+    .module-index { color: var(--green-700); font-size: 0.8rem; font-weight: 900; }
+
+    .security-point {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .check {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--green-100);
+      color: var(--green-700);
+      font-weight: 900;
+    }
+
+    .work-column { overflow: hidden; }
+    .work-column h3 { margin: 0; padding: 17px 20px; color: white; background: var(--navy-800); }
+    .work-column:nth-child(2) h3 { background: var(--blue-700); }
+    .work-column:nth-child(3) h3 { background: var(--green-700); }
+    .work-column ul { margin: 0; padding: 20px 20px 20px 42px; }
+    .work-column li { margin-bottom: 10px; color: var(--muted); }
+    .work-column li:last-child { margin-bottom: 0; }
+
+    .operations {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 22px;
+      margin-top: auto;
+    }
+
+    .operations-main {
+      padding: 32px;
+      border-radius: 18px;
+      background: var(--navy-900);
+      color: white;
+    }
+
+    .operations-main h3 { color: white; font-size: 1.5rem; }
+    .operations-main p { margin-bottom: 0; color: #c7d7e6; }
+    .operations-side { display: grid; gap: 14px; }
+    .operations-side .card { padding: 18px 20px; }
+
+    .pending-link {
+      display: inline-flex;
+      width: fit-content;
+      margin-top: 26px;
+      padding: 11px 15px;
+      border: 1px dashed #aab8c5;
+      border-radius: 9px;
+      background: #f4f6f8;
+      color: var(--muted);
+      cursor: not-allowed;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .next-list {
+      display: grid;
+      gap: 12px;
+      margin: auto 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: next-step;
+    }
+
+    .next-list li {
+      counter-increment: next-step;
+      display: grid;
+      grid-template-columns: 40px 1fr;
+      gap: 16px;
+      align-items: center;
+      padding: 14px 18px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: #fbfdff;
+      color: var(--navy-900);
+      font-weight: 750;
+    }
+
+    .next-list li::before {
+      content: counter(next-step);
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border-radius: 10px;
+      background: var(--blue-700);
+      color: white;
+      font-weight: 900;
+    }
+
+    .controls {
+      width: min(1180px, 100%);
+      display: grid;
+      grid-template-columns: auto minmax(180px, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+      margin: 0 auto;
+    }
+
+    .control-button {
+      min-width: 132px;
+      min-height: 46px;
+      border: 0;
+      border-radius: 11px;
+      background: var(--navy-900);
+      color: white;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .control-button:hover:not(:disabled), .control-button:focus-visible { background: var(--blue-700); }
+    .control-button:focus-visible { outline: 3px solid rgba(45, 139, 213, 0.4); outline-offset: 3px; }
+    .control-button:disabled { cursor: not-allowed; opacity: 0.42; }
+
+    .deck-status { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; }
+    #slide-counter { min-width: 68px; color: var(--navy-900); font-size: 0.88rem; font-weight: 900; text-align: center; }
+    .progress-track { height: 8px; overflow: hidden; border-radius: 99px; background: #d7e1ea; }
+    #slide-progress { width: 8.333%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--blue-500), var(--green-500)); transition: width 180ms ease; }
+
+    @media (max-width: 900px) {
+      .card-grid, .flow { grid-template-columns: repeat(2, 1fr); }
+      .flow-box:not(:last-child)::after { display: none; }
+      .module-grid { grid-template-columns: repeat(2, 1fr); }
+      .slide { overflow: auto; }
+    }
+
+    @media (max-width: 760px) {
+      .presentation-shell { padding: 12px; }
+      .deck, .slide { min-height: calc(100vh - 112px); }
+      .slide { padding: 30px 22px; border-radius: 14px; }
+      h1, h2 { font-size: clamp(2rem, 11vw, 3.2rem); }
+      .card-grid, .flow, .module-grid, .work-grid, .security-grid, .thread, .operations { grid-template-columns: 1fr; }
+      .flow-box { min-height: 112px; }
+      .card-mark { margin-bottom: 12px; }
+      .controls { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .deck-status { grid-column: 1 / -1; grid-row: 1; }
+      .control-button { min-width: 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    @media print {
+      @page { size: landscape; margin: 0; }
+      body { background: white; }
+      .presentation-shell { display: block; padding: 0; }
+      .deck { width: 100%; }
+      .slide, .slide.active {
+        display: flex !important;
+        min-height: 100vh;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        break-after: page;
+        page-break-after: always;
+      }
+      .slide:last-child { break-after: auto; page-break-after: auto; }
+      .controls { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="presentation-shell" aria-label="Bookings Bot management presentation">
+    <div class="deck" id="slide-deck">
+      <section class="slide active title-slide" role="region" aria-roledescription="slide" aria-label="Slide 1 of 12: Bookings Bot" aria-hidden="false" id="slide-1">
+        <p class="eyebrow">Management overview</p>
+        <h1>Bookings Bot</h1>
+        <p class="lede">A faster, consistent first review of booking screenshots in Slack</p>
+        <p class="status-pill">Implementation &amp; deployment preparation</p>
+      </section>
+
+      <section class="slide" role="region" aria-roledescription="slide" aria-label="Slide 2 of 12: The Current Problem" aria-hidden="true" id="slide-2">
+        <p class="slide-number">01 / The opportunity</p>
+        <h2>The Current Problem</h2>
+        <p class="lede">The same first review takes time and can produce different answers.</p>
+        <div class="card-grid">
+          <article class="card"><span class="card-mark">1</span><h3>Manual time</h3><p>Agents stop to inspect every screenshot.</p></article>
+          <article class="card"><span class="card-mark">2</span><h3>Repeated checks</h3><p>The same visible details are checked again and again.</p></article>
+          <article class="card"><span class="card-mark">3</span><h3>Inconsistent decisions</h3><p>First-pass outcomes can vary by reviewer.</p></article>
+          <article class="card standard"><span class="card-mark">4</span><h3>Standard first pass</h3><p>The bot applies one repeatable review method.</p></article>
+        </div>
+      </section>
+
+      <section class="slide" role="region" aria-roledescription="slide" aria-label="Slide 3 of 12: The New Method" aria-hidden="true" id="slide-3">
+        <p class="slide-number">02 / The method</p>
+        <h2>The New Method</h2>
+        <p class="lede">A straight, four-step path keeps the work easy to understand.</p>
+        <div class="flow" aria-label="New review method">
+          <div class="flow-box"><span class="flow-step">Step 1</span><strong>Agent posts screenshot</strong><span>Inside the normal Slack workflow</span></div>
+          <div class="flow-box"><span class="flow-step">Step 2</span><strong>Bot receives it</strong><span>The request stays in the channel</span></div>
+          <div class="flow-box"><span class="flow-step">Step 3</span><strong>AI reviews visible details</strong><span>Only what the image clearly shows</span></div>
+          <div class="flow-box"><span class="flow-step">Step 4</span><strong>Bot replies in thread</strong><span>A concise first-pass result</span></div>
+        </div>
+      </section>
+
+      <section class="slide" role="region" aria-roledescription="slide" aria-label="Slide 4 of 12: Simple Architecture" aria-hidden="true" id="slide-4">
+        <p class="slide-number">03 / How it connects</p>
+        <h2>Simple Architecture</h2>
+        <p class="lede">The bot uses the existing Google VM and a secure outbound connection—no public webhook.</p>
+        <div class="flow" aria-label="System architecture">
+          <div class="flow-box"><span class="flow-step">Workplace</span><strong>Slack</strong><span>Screenshot and request</span></div>
+          <div class="flow-box"><span class="flow-step">Service</span><strong>Bookings Bot</strong><span>Runs on the Google VM</span></div>
+          <div class="flow-box"><span class="flow-step">Review</span><strong>Gemini</strong><span>Checks visible booking details</span></div>
+          <div class="flow-box"><span class="flow-step">Result</span><strong>Slack reply</strong><span>Returns to the same thread</span></div>
+        </div>
+        <p class="note">Secure connection from the VM; no public inbound endpoint is required.</p>
+      </section>
+
+      <section class="slide" role="region" aria-roledescription="slide" aria-label="Slide 5 of 12: Example Review" aria-hidden="true" id="slide-5">
+        <p class="slide-number">04 / Fictional example</p>
+        <h2>Example Review</h2>
+        <p class="lede">The bot does not guess when an important value is not visible.</p>
+        <div class="thread">
+          <div class="conversation" aria-label="Fictional Slack thread">
+            <div class="message"><strong>Booking agent</strong><p>Please review booking BK-1048.</p></div>
+            <div class="message bot"><strong class="review-result">Needs Human Review</strong><p>The payment value is cropped. Please check the source before deciding.</p></div>
+          </div>
+          <div class="mock-shot" role="img" aria-label="Generic invented booking screenshot with a cropped payment value">
+            <div class="shot-header"><span>Booking summary</span><span>BK-1048</span></div>
+            <div class="shot-row"><span>Route</span><strong>North Station → Central</strong></div>
+            <div class="shot-row"><span>Date</span><strong>14 October</strong></div>
+            <div class="shot-row"><span>Payment</span><strong class="crop">Unavailable</strong></div>
+            <p class="fiction-label">Generic invented screenshot. No real personal data.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" role="region" aria-roledescription="slide" aria-label="Slide 6 of 12: Human Control" aria-hidden="true" id="slide-6">
+        <p class="slide-number">05 / Safe boundaries</p>
+        <h2>Human Control</h2>
+        <p class="lede">Four clear conditions always return the decision to a person.</p>
+        <div class="card-grid">
+          <article class="card"><span class="card-mark">!</span><h3>Unclear image</h3><p>Blur, crop, or unreadable text → human review.</p></article>
+          <article class="card"><span class="card-mark">!</span><h3>Missing information</h3><p>A required visible detail is absent → human review.</p></article>
+          <article class="card"><span class="card-mark">!</span><h3>Low confidence</h3><p>The result is not clear enough → human review.</p></article>
+          <article class="card"><span class="card-mark">!</span><h3>AI or network failure</h3><p>The service cannot complete safely → human review.</p></article>
+        </div>
+      </section>
+
+      <section class="slide" role="region" aria-roledescription="slide" aria-label="Slide 7 of 12: Project Structure" aria-hidden="true" id="slide-7">
+        <p class="slide-number">06 / Maintainable design</p>
+        <h2>Project Structure</h2>
+        <p class="lede">Six independent parts keep changes focused and providers replaceable.</p>
+        <div class="module-grid">
+          <article class="module"><span class="module-index">01</span><h3>Slack connection</h3><p>Receives requests and sends thread replies.</p></article>
+          <article class="module"><span class="module-index">02</span><h3>Image checks</h3><p>Validates files before review.</p></article>
+          <article class="module"><span class="module-index">03</span><h3>Review rules</h3><p>Applies one consistent decision format.</p></article>
+          <article class="module"><span class="module-index">04</span><h3>Replaceable AI provider</h3><p>Keeps the review service interchangeable.</p></article>
+          <article class="module"><span class="module-index">05</span><h3>Safe logging</h3><p>Records operations, not sensitive content.</p></article>
+          <article class="module"><span class="module-index">06</span><h3>VM service</h3><p>Runs and restarts the bot reliably.</p></article>
+        </div>
+      </section>
+
+      <section class="slide" role="region" aria-roledescription="slide" aria-label="Slide 8 of 12: Security" aria-hidden="true" id="slide-8">
+        <p class="slide-number">07 / Protection by default</p>
+        <h2>Security</h2>
+        <p class="lede">Access, credentials, screenshots, and logs each have a simple boundary.</p>
+        <div class="security-grid">
+          <article class="security-point"><span class="check">✓</span><div><h3>Private GitHub</h3><p>Source access stays limited to approved collaborators.</p></div></article>
+          <article class="security-point"><span class="check">✓</span><div><h3>VM-only secrets</h3><p>Credentials live on the server, outside source control.</p></div></article>
+          <article class="security-point"><span class="check">✓</span><div><h3>No screenshots committed</h3><p>Customer screenshots are never stored in the repository.</p></div></article>
+          <article class="security-point"><span class="check">✓</span><div><h3>Safe logs</h3><p>Tokens and image bytes are not logged.</p></div></article>
+        </div>
+      </section>
+
+      <section class="slide" role="region" aria-roledescription="slide" aria-label="Slide 9 of 12: Work Progress" aria-hidden="true" id="slide-9">
+        <p class="slide-number">08 / Scaffold-stage view</p>
+        <h2>Work Progress</h2>
+        <p class="lede">The direction is agreed; implementation and deployment preparation are underway.</p>
+        <div class="work-grid">
+          <article class="work-column"><h3>Completed</h3><ul><li>Architecture agreed</li><li>Service boundaries planned</li><li>Deployment path chosen</li></ul></article>
+          <article class="work-column"><h3>In progress</h3><ul><li>Core service scaffold</li><li>Automated tests</li><li>Secure configuration</li><li>VM service setup</li></ul></article>
+          <article class="work-column"><h3>Next</h3><ul><li>Finish implementation</li><li>Connect Slack test app</li><li>Validate review rules</li><li>Deploy pilot</li></ul></article>
+        </div>
+      </section>
+
+      <section class="slide" role="region" aria-roledescription="slide" aria-label="Slide 10 of 12: Operations and Cost Control" aria-hidden="true" id="slide-10">
+        <p class="slide-number">09 / Lean operation</p>
+        <h2>Operations &amp; Cost Control</h2>
+        <p class="lede">Use the existing small VM, standard service controls, and visible budget limits.</p>
+        <div class="operations">
+          <article class="operations-main"><h3>Google e2-micro</h3><p>A lightweight service footprint supports a controlled pilot without adding a large hosting layer.</p></article>
+          <div class="operations-side">
+            <article class="card"><h3>systemd</h3><p>Start, stop, restart, and recover the service.</p></article>
+            <article class="card"><h3>Logs &amp; status</h3><p>Use standard VM tools for operational checks.</p></article>
+            <article class="card"><h3>Free tier &amp; budget monitoring</h3><p>Track usage and alerts before costs grow.</p></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" role="region" aria-roledescription="slide" aria-label="Slide 11 of 12: GitHub and Deployment" aria-hidden="true" id="slide-11">
+        <p class="slide-number">10 / Release path</p>
+        <h2>GitHub &amp; Deployment</h2>
+        <p class="lede">One controlled path takes reviewed code to the Slack pilot.</p>
+        <div class="flow" aria-label="Deployment flow">
+          <div class="flow-box"><span class="flow-step">Source</span><strong>Private GitHub</strong><span>Reviewed project code</span></div>
+          <div class="flow-box"><span class="flow-step">Host</span><strong>Google VM</strong><span>Secure runtime secrets</span></div>
+          <div class="flow-box"><span class="flow-step">Service</span><strong>systemd</strong><span>Managed bot process</span></div>
+          <div class="flow-box"><span class="flow-step">Workplace</span><strong>Slack</strong><span>Test then pilot</span></div>
+        </div>
+        <a class="pending-link" data-repository-status="pending" aria-disabled="true">Repository link pending publication</a>
+      </section>
+
+      <section class="slide" role="region" aria-roledescription="slide" aria-label="Slide 12 of 12: Next Steps" aria-hidden="true" id="slide-12">
+        <p class="slide-number">11 / Controlled launch</p>
+        <h2>Next Steps</h2>
+        <p class="lede">Move from scaffold to pilot through five deliberate actions.</p>
+        <ol class="next-list">
+          <li>Rotate credentials before deployment</li>
+          <li>Complete services and automated tests</li>
+          <li>Publish the private GitHub repository</li>
+          <li>Deploy to the VM and test in Slack</li>
+          <li>Add the exact booking review criteria</li>
+        </ol>
+      </section>
+    </div>
+
+    <nav class="controls" aria-label="Presentation controls">
+      <button class="control-button" id="previous-slide" type="button" aria-label="Go to previous slide">Previous</button>
+      <div class="deck-status">
+        <span id="slide-counter" aria-live="polite" aria-atomic="true">1 / 12</span>
+        <div class="progress-track" role="progressbar" aria-label="Presentation progress" aria-valuemin="1" aria-valuemax="12" aria-valuenow="1">
+          <div id="slide-progress"></div>
+        </div>
+      </div>
+      <button class="control-button" id="next-slide" type="button" aria-label="Go to next slide">Next</button>
+    </nav>
+  </main>
+
+  <script>
+    (() => {
+      const slides = Array.from(document.querySelectorAll(".slide"));
+      const previousButton = document.getElementById("previous-slide");
+      const nextButton = document.getElementById("next-slide");
+      const counter = document.getElementById("slide-counter");
+      const progress = document.getElementById("slide-progress");
+      const progressBar = progress && progress.parentElement;
+
+      if (!slides.length || !previousButton || !nextButton || !counter || !progress) {
+        return;
+      }
+
+      const hashIndex = Number.parseInt(window.location.hash.replace("#slide-", ""), 10) - 1;
+      let currentIndex = Number.isInteger(hashIndex) ? hashIndex : 0;
+
+      const showSlide = (index, updateHash = true) => {
+        currentIndex = Math.max(0, Math.min(index, slides.length - 1));
+
+        slides.forEach((slide, slideIndex) => {
+          const isActive = slideIndex === currentIndex;
+          slide.classList.toggle("active", isActive);
+          slide.setAttribute("aria-hidden", String(!isActive));
+        });
+
+        const visibleNumber = currentIndex + 1;
+        counter.textContent = `${visibleNumber} / ${slides.length}`;
+        progress.style.width = `${(visibleNumber / slides.length) * 100}%`;
+        previousButton.disabled = currentIndex === 0;
+        nextButton.disabled = currentIndex === slides.length - 1;
+
+        if (progressBar) {
+          progressBar.setAttribute("aria-valuemax", String(slides.length));
+          progressBar.setAttribute("aria-valuenow", String(visibleNumber));
+          progressBar.setAttribute("aria-valuetext", `Slide ${visibleNumber} of ${slides.length}`);
+        }
+
+        const nextHash = `#slide-${visibleNumber}`;
+        if (updateHash && window.location.hash !== nextHash) {
+          window.history.replaceState(null, "", nextHash);
+        }
+      };
+
+      previousButton.addEventListener("click", () => showSlide(currentIndex - 1));
+      nextButton.addEventListener("click", () => showSlide(currentIndex + 1));
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowRight" || event.key === "PageDown") {
+          event.preventDefault();
+          showSlide(currentIndex + 1);
+        } else if (event.key === "ArrowLeft" || event.key === "PageUp") {
+          event.preventDefault();
+          showSlide(currentIndex - 1);
+        } else if (event.key === "Home") {
+          event.preventDefault();
+          showSlide(0);
+        } else if (event.key === "End") {
+          event.preventDefault();
+          showSlide(slides.length - 1);
+        }
+      });
+
+      window.addEventListener("hashchange", () => {
+        const requestedIndex = Number.parseInt(window.location.hash.replace("#slide-", ""), 10) - 1;
+        if (Number.isInteger(requestedIndex)) showSlide(requestedIndex, false);
+      });
+
+      showSlide(currentIndex);
+    })();
+  </script>
+</body>
+</html>
