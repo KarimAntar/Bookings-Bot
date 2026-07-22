@@ -1,6 +1,8 @@
 import { promises as fs } from "fs";
 
 export class RuleStore {
+  private queue: Promise<void> = Promise.resolve();
+
   constructor(private readonly filepath: string) {}
 
   async getRules(): Promise<string[]> {
@@ -13,16 +15,27 @@ export class RuleStore {
   }
 
   async addRule(rule: string): Promise<void> {
-    const rules = await this.getRules();
-    rules.push(rule);
-    await fs.writeFile(this.filepath, JSON.stringify(rules, null, 2));
+    const task = this.queue.then(async () => {
+      const rules = await this.getRules();
+      rules.push(rule);
+      await fs.writeFile(this.filepath, JSON.stringify(rules, null, 2));
+    });
+    this.queue = task.catch(() => {});
+    return task;
   }
 
   async removeRule(index: number): Promise<boolean> {
-    const rules = await this.getRules();
-    if (index < 0 || index >= rules.length) return false;
-    rules.splice(index, 1);
-    await fs.writeFile(this.filepath, JSON.stringify(rules, null, 2));
-    return true;
+    let result = false;
+    const task = this.queue.then(async () => {
+      const rules = await this.getRules();
+      if (index >= 0 && index < rules.length) {
+        rules.splice(index, 1);
+        await fs.writeFile(this.filepath, JSON.stringify(rules, null, 2));
+        result = true;
+      }
+    });
+    this.queue = task.catch(() => {});
+    await task;
+    return result;
   }
 }

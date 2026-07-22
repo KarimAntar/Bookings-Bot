@@ -35,4 +35,12 @@ describe("RuleStore", () => {
     await store.addRule("Rule 1");
     expect(await store.removeRule(99)).toBe(false);
   });
+
+  test("adds rules concurrently without data loss", async () => {
+    const store = new RuleStore(filepath);
+    const rules = Array.from({ length: 10 }, (_, i) => `Rule ${i}`);
+    await Promise.all(rules.map(rule => store.addRule(rule)));
+    const savedRules = await store.getRules();
+    expect(savedRules).toHaveLength(10);
+  });
 });
