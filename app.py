@@ -19,8 +19,10 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 # Initialize Gemini
 genai.configure(api_key=GEMINI_API_KEY)
 
-# Initialize Slack app
-app = App(token=SLACK_BOT_TOKEN)
+if SLACK_BOT_TOKEN:
+    app = App(token=SLACK_BOT_TOKEN)
+else:
+    app = None
 
 BOOKING_REVIEW_PROMPT = """
 You are an expert quality assurance bot for a booking platform.
