@@ -17,7 +17,7 @@ const EnvSchema = z.object({
   SLACK_BOT_TOKEN: z.string().trim().startsWith("xoxb-").min(10),
   SLACK_APP_TOKEN: z.string().trim().startsWith("xapp-").min(10),
   GEMINI_API_KEY: z.string().trim().min(10),
-  GEMINI_MODEL: z.string().trim().min(1).default("gemini-2.5-flash-lite"),
+  GEMINI_MODEL: z.string().trim().min(1).default("gemini-3.5-flash-lite"),
   ALLOWED_CHANNEL_IDS: z.string().default(""),
   MAX_IMAGE_BYTES: integer(1, 25 * 1024 * 1024).default(8_388_608),
   MAX_ATTACHMENTS: integer(1, 20).default(4),

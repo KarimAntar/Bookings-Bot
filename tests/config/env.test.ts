@@ -15,7 +15,7 @@ describe("parseEnv", () => {
       slackBotToken: requiredEnv.SLACK_BOT_TOKEN,
       slackAppToken: requiredEnv.SLACK_APP_TOKEN,
       geminiApiKey: requiredEnv.GEMINI_API_KEY,
-      geminiModel: "gemini-2.5-flash-lite",
+      geminiModel: "gemini-3.5-flash-lite",
       allowedChannelIds: new Set(),
       maxImageBytes: 8_388_608,
       maxAttachments: 4,

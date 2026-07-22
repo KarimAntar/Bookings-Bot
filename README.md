@@ -29,7 +29,7 @@ bun run build
 node --env-file=.env dist/index.js
 ```
 
-Bun builds the TypeScript application, while Node runs Slack Socket Mode because Slack's WebSocket heartbeat requires an `undici` ping API that Bun does not currently expose. Socket Mode requires no inbound HTTP port.
+Bun builds the TypeScript application, while Node runs Slack Socket Mode because Slack's WebSocket heartbeat requires an `undici` ping API that Bun does not currently expose. Socket Mode requires no inbound HTTP port. The default vision model is `gemini-3.5-flash-lite`; override `GEMINI_MODEL` in the environment file when Google changes model availability.
 
 ## Google Compute Engine e2-micro
 
