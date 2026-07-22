@@ -1,12 +1,13 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test, spyOn } from "bun:test";
 import type { AIProvider } from "../../src/ai/ai-provider";
 import type { ReviewRequest } from "../../src/domain/review-request";
 import { type ReviewResult, ReviewResultSchema } from "../../src/domain/review-result";
 import { ReviewService } from "../../src/reviews/review-service";
-import { registerMessageListener, type SlackMessage } from "../../src/slack/message-listener";
+import { registerMessageListener } from "../../src/slack/message-listener";
+import type { SlackMessage } from "../../src/slack/message-listener";
 import { ReviewThreadStore } from "../../src/slack/review-thread-store";
 import type { AppConfig } from "../../src/config/env";
-import { GeminiProvider, buildGeminiParts } from "../../src/ai/gemini-provider";
+import { buildGeminiParts } from "../../src/ai/gemini-provider";
 
 const logger = {
   debug: () => undefined,
@@ -49,26 +50,25 @@ class ScenarioProvider implements AIProvider {
 }
 
 class FakeSlackApp {
-  handlers = new Map<string, Function>();
-  event(name: string, handler: Function) {
+  handlers = new Map<string, (...args: unknown[]) => unknown>();
+  event(name: string, handler: (...args: unknown[]) => unknown) {
     this.handlers.set(name, handler);
   }
 }
 
 class FakeSlackClient {
-  readonly posts: any[] = [];
-  readonly _reactions: any[] = [];
+  readonly posts: { text?: string }[] = [];
+  readonly _reactions: { name?: string }[] = [];
   chat = {
-    postMessage: async (args: any) => { this.posts.push(args); },
+    postMessage: async (args: { text?: string }) => { this.posts.push(args); },
   };
   reactions = {
-    add: async (args: any) => { this._reactions.push(args); },
+    add: async (args: { name?: string }) => { this._reactions.push(args); },
   };
 }
 
 describe("Slack booking scenarios (Listener Flow)", () => {
   const config: AppConfig = {
-    port: 3000,
     logLevel: "silent",
     slackBotToken: "xoxb-fake",
     slackAppToken: "xapp-fake",
@@ -90,15 +90,15 @@ describe("Slack booking scenarios (Listener Flow)", () => {
   test("approved matching package flows through listener", async () => {
     const provider = new ScenarioProvider(() => result());
     const service = new ReviewService(provider, config.lowConfidenceThreshold, logger);
-    const store = new ReviewThreadStore(config.maxActiveReviews, config.activeReviewTtlMs);
+    const store = new ReviewThreadStore(10, 60000);
     const app = new FakeSlackApp();
     registerMessageListener(app as any, config, service, logger, store);
 
     const client = new FakeSlackClient();
-    const handler = app.handlers.get("message")!;
+    const handler = app.handlers.get("message") as any;
 
-    const originalFetch = global.fetch;
-    global.fetch = async () => new Response(new Uint8Array([1]), { status: 200 }) as any;
+    // removed
+    spyOn(global, "fetch").mockImplementation((async () => new Response(new Uint8Array([1]), { status: 200 })) as unknown as typeof fetch);
 
     try {
       const message: SlackMessage = {
@@ -119,34 +119,36 @@ describe("Slack booking scenarios (Listener Flow)", () => {
       expect(provider.requests[0]?.images.map(i => i.id)).toEqual(["original:crm", "original:campaign", "original:booking"]);
 
       expect(client.posts.length).toBe(1);
-      expect(client.posts[0].text).toContain("Booking review: Approved");
+      expect(client.posts[0]?.text).toContain("Booking review: Approved");
       expect(client._reactions.map(r => r.name)).toContain("white_check_mark");
       expect(store.has("C1", "1")).toBe(false);
 
-      const geminiParts = buildGeminiParts(provider.requests[0]);
+      const req0 = provider.requests[0];
+      expect(req0).toBeDefined();
+      const geminiParts = buildGeminiParts(req0 as any);
       expect(geminiParts[0]).toEqual({ text: expect.stringContaining("original:crm [original], original:campaign [original], original:booking [original]") });
       expect(geminiParts[1]).toEqual({ text: expect.stringContaining("Image original:crm [original]") });
 
     } finally {
-      global.fetch = originalFetch;
+      spyOn(global, "fetch").mockRestore();
     }
   });
 
   test("corrected-thread with replacement screenshot flows from root -> correction -> approved", async () => {
-    const provider = new ScenarioProvider((request) => request.images.some(img => img.source === "correction") ? result() : result({
+    const provider = new ScenarioProvider((request) => request.images.some(img => img.id.startsWith("correction")) ? result() : result({
       status: "correction_required",
       missingNoteEntries: ["Annual sales: 12"],
     }));
 
     const service = new ReviewService(provider, config.lowConfidenceThreshold, logger);
-    const store = new ReviewThreadStore(config.maxActiveReviews, config.activeReviewTtlMs);
+    const store = new ReviewThreadStore(10, 60000);
     const app = new FakeSlackApp();
     registerMessageListener(app as any, config, service, logger, store);
 
     const client = new FakeSlackClient();
-    const handler = app.handlers.get("message")!;
-    const originalFetch = global.fetch;
-    global.fetch = async () => new Response(new Uint8Array([1]), { status: 200 }) as any;
+    const handler = app.handlers.get("message") as any;
+    // removed
+    spyOn(global, "fetch").mockImplementation((async () => new Response(new Uint8Array([1]), { status: 200 })) as unknown as typeof fetch);
 
     try {
       const rootMsg: SlackMessage = {
@@ -160,8 +162,8 @@ describe("Slack booking scenarios (Listener Flow)", () => {
       await handler({ event: rootMsg, body: { event_id: "Ev1" }, client });
 
       expect(client.posts.length).toBe(1);
-      expect(client.posts[0].text).toContain("Annual sales: 12");
-      expect(client.posts[0].text).toContain("reply in this thread");
+      expect(client.posts[0]?.text).toContain("Annual sales: 12");
+      expect(client.posts[0]?.text).toContain("reply in this thread");
       expect(store.has("C1", "1")).toBe(true);
 
       const correctionMsg: SlackMessage = {
@@ -173,18 +175,20 @@ describe("Slack booking scenarios (Listener Flow)", () => {
       await handler({ event: correctionMsg, body: { event_id: "Ev2" }, client });
 
       expect(provider.requests.length).toBe(2);
-      expect(provider.requests[1].images.map(i => i.id)).toEqual(["original:crm", "original:campaign", "original:booking", "correction:notes-fixed"]);
-      expect(provider.requests[1].messageText).toContain("Correction (authoritative where conflicting): Annual sales: 12");
+      expect(provider.requests[1]?.images.map(i => i.id)).toEqual(["original:crm", "original:campaign", "original:booking", "correction:notes-fixed"]);
+      expect(provider.requests[1]?.messageText).toContain("Correction (authoritative where conflicting): Annual sales: 12");
 
       expect(client.posts.length).toBe(2);
-      expect(client.posts[1].text).toContain("Booking review: Approved");
+      expect(client.posts[1]?.text).toContain("Booking review: Approved");
       expect(store.has("C1", "1")).toBe(false);
 
-      const geminiParts = buildGeminiParts(provider.requests[1]);
+      const req1 = provider.requests[1];
+      expect(req1).toBeDefined();
+      const geminiParts = buildGeminiParts(req1 as any);
       expect(geminiParts[0]).toEqual({ text: expect.stringContaining("original:crm [original], original:campaign [original], original:booking [original], correction:notes-fixed [correction]") });
 
     } finally {
-      global.fetch = originalFetch;
+      spyOn(global, "fetch").mockRestore();
     }
   });
 
@@ -192,20 +196,18 @@ describe("Slack booking scenarios (Listener Flow)", () => {
     const provider = new ScenarioProvider(() => result({
       status: "rejected",
       reasoning: "Authoritative CRM sales are below the campaign minimum.",
-      crmFields: { firstName: "Ava", sales: 7 },
-      campaignRequirements: [{ name: "Minimum sales", requiredValue: 10, actualValue: 7, passed: false, mustAppearInNotes: true }],
       failedRequirements: ["Minimum sales: requires 10, CRM shows 7"],
     }));
 
     const service = new ReviewService(provider, config.lowConfidenceThreshold, logger);
-    const store = new ReviewThreadStore(config.maxActiveReviews, config.activeReviewTtlMs);
+    const store = new ReviewThreadStore(10, 60000);
     const app = new FakeSlackApp();
     registerMessageListener(app as any, config, service, logger, store);
 
     const client = new FakeSlackClient();
-    const handler = app.handlers.get("message")!;
-    const originalFetch = global.fetch;
-    global.fetch = async () => new Response(new Uint8Array([1]), { status: 200 }) as any;
+    const handler = app.handlers.get("message") as any;
+    // removed
+    spyOn(global, "fetch").mockImplementation((async () => new Response(new Uint8Array([1]), { status: 200 })) as unknown as typeof fetch);
 
     try {
       const msg: SlackMessage = {
@@ -215,25 +217,25 @@ describe("Slack booking scenarios (Listener Flow)", () => {
       await handler({ event: msg, body: { event_id: "Ev1" }, client });
 
       expect(client.posts.length).toBe(1);
-      expect(client.posts[0].text).toContain("Minimum sales: requires 10, CRM shows 7");
+      expect(client.posts[0]?.text).toContain("Minimum sales: requires 10, CRM shows 7");
       expect(client._reactions.map(r => r.name)).toContain("x");
       expect(store.has("C1", "1")).toBe(false);
     } finally {
-      global.fetch = originalFetch;
+      spyOn(global, "fetch").mockRestore();
     }
   });
 
   test("ambiguous evidence requests human review with <!here>", async () => {
     const provider = new ScenarioProvider(() => result({ status: "needs_human_review", reasoning: "The sales value is unreadable in the CRM screenshot.", confidence: 0.45, evidenceRoles: [{ imageId: "original:crm", roles: ["crm_prospect"], readable: false }] }));
     const service = new ReviewService(provider, config.lowConfidenceThreshold, logger);
-    const store = new ReviewThreadStore(config.maxActiveReviews, config.activeReviewTtlMs);
+    const store = new ReviewThreadStore(10, 60000);
     const app = new FakeSlackApp();
     registerMessageListener(app as any, config, service, logger, store);
 
     const client = new FakeSlackClient();
-    const handler = app.handlers.get("message")!;
-    const originalFetch = global.fetch;
-    global.fetch = async () => new Response(new Uint8Array([1]), { status: 200 }) as any;
+    const handler = app.handlers.get("message") as any;
+    // removed
+    spyOn(global, "fetch").mockImplementation((async () => new Response(new Uint8Array([1]), { status: 200 })) as unknown as typeof fetch);
 
     try {
       const msg: SlackMessage = {
@@ -243,10 +245,10 @@ describe("Slack booking scenarios (Listener Flow)", () => {
       await handler({ event: msg, body: { event_id: "Ev1" }, client });
 
       expect(client.posts.length).toBe(1);
-      expect(client.posts[0].text).toStartWith("<!here>");
+      expect(client.posts[0]?.text).toStartWith("<!here>");
       expect(client._reactions.map(r => r.name)).toContain("warning");
     } finally {
-      global.fetch = originalFetch;
+      spyOn(global, "fetch").mockRestore();
     }
   });
 });
