@@ -4,6 +4,20 @@ const presentationPath = new URL("../../presentation/index.html", import.meta.ur
 const html = await Bun.file(presentationPath).text();
 const slides = html.match(/<section\b[^>]*class="[^"]*\bslide\b[^"]*"[^>]*>[\s\S]*?<\/section>/gi) ?? [];
 const renderedText = html.replaceAll("&amp;", "&");
+const workProgressSlide = slides.find((slide) => slide.includes('id="slide-9"')) ?? "";
+const workProgressColumns = new Map<string, string[]>();
+for (const column of workProgressSlide.matchAll(
+  /<article class="work-column"><h3>([^<]+)<\/h3><ul>([\s\S]*?)<\/ul><\/article>/g,
+)) {
+  const heading = column[1];
+  const list = column[2];
+  if (!heading || !list) continue;
+
+  const items = [...list.matchAll(/<li>([^<]+)<\/li>/g)].flatMap((item) =>
+    item[1] ? [item[1].replaceAll("&amp;", "&")] : [],
+  );
+  workProgressColumns.set(heading, items);
+}
 
 const requiredTitles = [
   "The Current Problem",
@@ -87,6 +101,26 @@ describe("management presentation", () => {
     expect(html).not.toMatch(/<link\b[^>]*\bhref\s*=/i);
     expect(html).not.toMatch(/<img\b[^>]*\bsrc\s*=\s*["'](?:https?:)?\/\//i);
     expect(html).not.toMatch(/hugging face|hf_space/i);
+  });
+
+  test("shows accurate Work Progress statuses with no more than four items per column", () => {
+    expect(workProgressColumns.get("Completed")).toEqual([
+      "Architecture and design approved",
+      "Implementation plan approved",
+      "TypeScript & Bun scaffold",
+    ]);
+    expect(workProgressColumns.get("In progress")).toEqual(["Core services", "Automated tests"]);
+    expect(workProgressColumns.get("Next")).toEqual([
+      "Publish private GitHub repository",
+      "Deploy to VM",
+      "Run controlled Slack test",
+      "Add organization-specific criteria",
+    ]);
+
+    for (const items of workProgressColumns.values()) expect(items.length).toBeLessThanOrEqual(4);
+    expect(workProgressColumns.get("In progress")).not.toContain("TypeScript & Bun scaffold");
+    expect(workProgressColumns.get("Completed")).not.toContain("Core services");
+    expect(workProgressColumns.get("Completed")).not.toContain("VM setup");
   });
 
   test("shows the repository as pending without an active link", () => {
