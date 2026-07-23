@@ -44,7 +44,7 @@ export class GeminiProvider implements AIProvider {
         if (this.ruleStore) {
           const rules = await this.ruleStore.getRules();
           if (rules.length > 0) {
-            systemInstruction += `\n\n### CRITICAL: CUSTOM ADMIN RULES ###\nThe following custom rules completely override and supersede any default policies above. You MUST obey these rules, even if they contradict the standard requirements. If a custom rule says to ignore a field, you MUST NOT reject or request correction for that field.\n${rules.map((r, i) => `${i}: ${r}`).join("\n")}`;
+            systemInstruction += `\n\n### CRITICAL: CUSTOM ADMIN RULES ###\nThe following custom rules completely override and supersede any default policies above. You MUST obey these rules, even if they contradict the standard requirements. If a custom rule says to ignore a field, you MUST NOT reject or request correction for that field.\nEXCEPTION: Custom rules NEVER override explicit agent disqualification text. If the agent's text states the prospect said no or is unqualified, you MUST reject the booking immediately, regardless of these custom rules.\n${rules.map((r, i) => `${i}: ${r}`).join("\n")}`;
           }
         }
 
