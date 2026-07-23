@@ -108,7 +108,7 @@ export function registerMessageListener(
             });
           } catch (error) {
             logger.error(
-              { err: error, channel: message.channel },
+              { err: error instanceof Error ? { message: error.message, stack: error.stack } : error, channel: message.channel },
               "Rule manager failed",
             );
             await client.chat.postMessage({
@@ -303,18 +303,25 @@ export function registerMessageListener(
               }
             }
           } catch (error) {
+            if (kind === "root") store.close(message.channel, rootTs);
             logger.error(
-              { err: error, eventId, channel: message.channel, rootTs, kind },
+              { err: error instanceof Error ? { message: error.message, stack: error.stack } : error, eventId, channel: message.channel, rootTs, kind },
               "Slack submission processing failed",
             );
             if (
               error instanceof Error &&
               (error.message.includes("At most") ||
-                error.message.includes("size limit"))
+                error.message.includes("size limit") ||
+                error.message.includes("supported") ||
+                error.message.includes("download") ||
+                error.message.includes("metadata"))
             ) {
+              const reasoning = error.message.includes("download") || error.message.includes("metadata")
+                ? "One of the images could not be downloaded. Please re-upload it."
+                : error.message;
               result = {
                 status: "correction_required",
-                reasoning: error.message,
+                reasoning: reasoning,
                 confidence: 1,
                 evidenceRoles: [],
                 crmFields: {},
@@ -328,7 +335,7 @@ export function registerMessageListener(
                 },
                 mismatches: [],
                 missingNoteEntries: [],
-                missingEvidence: [error.message],
+                missingEvidence: [reasoning],
                 failedRequirements: [],
                 flags: ["safe_public_summary"],
               };
@@ -353,7 +360,7 @@ export function registerMessageListener(
         });
       } catch (error) {
         logger.warn(
-          { err: error, eventId, channel: message.channel, rootTs },
+          { err: error instanceof Error ? { message: error.message, stack: error.stack } : error, eventId, channel: message.channel, rootTs },
           "Review queue rejected submission",
         );
         const fallback = humanReviewFallback("review_queue_unavailable");
