@@ -290,4 +290,58 @@ describe("Slack booking scenarios (Listener Flow)", () => {
       spyOn(global, "fetch").mockRestore();
     }
   });
+
+  test("agent text disqualifying the prospect rejects the booking", async () => {
+    const provider = new ScenarioProvider((request) => {
+      if (request.messageText?.includes("the prospect said no")) {
+        return result({
+          status: "rejected",
+          reasoning: "The agent explicitly stated the prospect is unqualified.",
+          failedRequirements: ["Agent stated: the prospect said no"],
+        });
+      }
+      return result({
+        status: "correction_required",
+        missingEvidence: ["booking_notes"],
+      });
+    });
+
+    const service = new ReviewService(provider, config.lowConfidenceThreshold, logger);
+    const store = new ReviewThreadStore(10, 60000);
+    const app = new FakeSlackApp();
+    registerMessageListener(app as any, config, service, logger, store);
+
+    const client = new FakeSlackClient();
+    const handler = app.handlers.get("message") as any;
+    spyOn(global, "fetch").mockImplementation((async () => new Response(new Uint8Array([1]), { status: 200 })) as unknown as typeof fetch);
+
+    try {
+      const rootMsg: SlackMessage = {
+        type: "message", channel: "C1", ts: "1", text: "g2g?",
+        files: [
+          { id: "crm", mimetype: "image/png", size: 10, url_private_download: "https://fake/crm" },
+          { id: "campaign", mimetype: "image/png", size: 10, url_private_download: "https://fake/campaign" },
+          { id: "booking", mimetype: "image/png", size: 10, url_private_download: "https://fake/booking" }
+        ],
+      };
+      await handler({ event: rootMsg, body: { event_id: "Ev1" }, client });
+
+      expect(client.posts.length).toBe(1);
+      expect(store.has("C1", "1")).toBe(true); // Thread is active waiting for correction
+
+      const correctionMsg: SlackMessage = {
+        type: "message", channel: "C1", ts: "2", thread_ts: "1", text: "the prospect said no",
+        files: [],
+      };
+      await handler({ event: correctionMsg, body: { event_id: "Ev2" }, client });
+
+      expect(provider.requests.length).toBe(2);
+      expect(client.posts.length).toBe(2);
+      expect(client.posts[1]?.text).toContain("The agent explicitly stated the prospect is unqualified.");
+      expect(client._reactions.map(r => r.name)).toContain("x");
+      expect(store.has("C1", "1")).toBe(false); // Thread should be closed
+    } finally {
+      spyOn(global, "fetch").mockRestore();
+    }
+  });
 });
