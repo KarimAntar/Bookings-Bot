@@ -10,7 +10,7 @@ export const ReviewResultSchema = z.object({
   status: ReviewStatusSchema,
   reasoning: z.string().trim().min(1).max(1_000),
   confidence: z.number().min(0).max(1),
-  evidenceRoles: z.array(z.object({ imageId: z.string().regex(/^(original|correction):[^\s]+$/).max(500), roles: z.array(EvidenceRole).min(1).max(7), readable: z.boolean() }).strict()).max(20),
+  evidenceRoles: z.array(z.object({ imageId: z.string().max(500), roles: z.array(EvidenceRole).min(1).max(7), readable: z.boolean() }).strict()).max(20),
   crmFields: Fields,
   bookingFields: Fields,
   campaignRequirements: z.array(z.object({ name: Text, requiredValue: Value, actualValue: Value, passed: z.boolean(), mustAppearInNotes: z.boolean() }).strict()).max(50),
