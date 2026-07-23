@@ -28,10 +28,10 @@ describe("actual Slack listener",()=>{
     expect(requests[1].messageText).toContain("correct phone");
     expect(h.posts).toHaveLength(2);
   });
-  test("closes a newly-created session when root processing fails",async()=>{
+  test("keeps session open when root processing fails for correction_required",async()=>{
     const h=harness();
     await h.handler({event:{type:"message",channel:"C",ts:"bad",files:[{...file,mimetype:"text/plain"}]},body:{event_id:"EB"},client:h.client});
-    expect(h.store.has("C","bad")).toBe(false);
+    expect(h.store.has("C","bad")).toBe(true);
   });
 });
 

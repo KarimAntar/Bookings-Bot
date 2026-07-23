@@ -303,7 +303,7 @@ export function registerMessageListener(
               }
             }
           } catch (error) {
-            if (kind === "root") store.close(message.channel, rootTs);
+            
             logger.error(
               { err: error instanceof Error ? { message: error.message, stack: error.stack } : error, eventId, channel: message.channel, rootTs, kind },
               "Slack submission processing failed",
