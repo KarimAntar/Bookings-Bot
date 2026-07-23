@@ -239,11 +239,39 @@ export function registerMessageListener(
                 flags: ["safe_public_summary"],
               };
             } else {
-              result = await reviewService.review({
-                eventId,
-                messageText: session.evidence.messageText,
-                images: session.evidence.images,
-              });
+              let progressMessageTs: string | undefined;
+              const timer = setTimeout(async () => {
+                try {
+                  const res = await client.chat.postMessage({
+                    channel: message.channel,
+                    thread_ts: rootTs,
+                    text: "Give me just a few more seconds, I'm still looking over these screenshots... 🧐",
+                  });
+                  progressMessageTs = res.ts;
+                } catch (err) {
+                  logger.debug({ err, channel: message.channel, rootTs }, "Failed to post progress message");
+                }
+              }, 4000);
+
+              try {
+                result = await reviewService.review({
+                  eventId,
+                  messageText: session.evidence.messageText,
+                  images: session.evidence.images,
+                });
+              } finally {
+                clearTimeout(timer);
+                if (progressMessageTs) {
+                  try {
+                    await client.chat.delete({
+                      channel: message.channel,
+                      ts: progressMessageTs,
+                    });
+                  } catch (err) {
+                    logger.debug({ err, channel: message.channel, ts: progressMessageTs }, "Failed to delete progress message");
+                  }
+                }
+              }
             }
           } catch (error) {
             logger.error(
