@@ -40,7 +40,8 @@ export class GeminiProvider implements AIProvider {
   async review(request: ReviewRequest): Promise<unknown> {
     return withRetry(
       () => withTimeout(async (signal) => {
-        let systemInstruction = BOOKING_REVIEW_POLICY;
+        const currentDateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        let systemInstruction = `Current Date: ${currentDateStr}\n\n${BOOKING_REVIEW_POLICY}`;
         if (this.ruleStore) {
           const rules = await this.ruleStore.getRules();
           if (rules.length > 0) {
