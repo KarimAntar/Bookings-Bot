@@ -263,7 +263,7 @@ export function registerMessageListener(
                     revision,
                   );
             if (!session || session.revision !== revision) return;
-            if (session.evidence.images.length < 3) {
+            if (session.evidence.images.length < 2) {
               result = {
                 status: "correction_required",
                 reasoning: "Not enough screenshots provided.",
@@ -281,7 +281,7 @@ export function registerMessageListener(
                 mismatches: [],
                 missingNoteEntries: [],
                 missingEvidence: [
-                  "Please send all screenshots (minimum 3 required).",
+                  "Please send all screenshots (minimum 2 required).",
                 ],
                 failedRequirements: [],
                 flags: ["safe_public_summary"],

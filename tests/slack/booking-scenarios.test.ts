@@ -262,7 +262,7 @@ describe("Slack booking scenarios (Listener Flow)", () => {
     }
   });
 
-  test("fewer than 3 screenshots returns correction_required without calling AI", async () => {
+  test("fewer than 2 screenshots returns correction_required without calling AI", async () => {
     const provider = new ScenarioProvider(() => result()); // Should not be called
     const service = new ReviewService(provider, config.lowConfidenceThreshold, logger);
     const store = new ReviewThreadStore(10, 60000);
@@ -277,15 +277,14 @@ describe("Slack booking scenarios (Listener Flow)", () => {
       const msg: SlackMessage = {
         type: "message", channel: "C1", ts: "1", text: "g2g?",
         files: [
-          { id: "crm", mimetype: "image/png", size: 10, url_private_download: "https://fake/crm" },
-          { id: "campaign", mimetype: "image/png", size: 10, url_private_download: "https://fake/campaign" }
-        ], // Only 2 images
+          { id: "crm", mimetype: "image/png", size: 10, url_private_download: "https://fake/crm" }
+        ], // Only 1 image
       };
       await handler({ event: msg, body: { event_id: "Ev1" }, client });
 
       expect(provider.requests.length).toBe(0);
       expect(client.posts.length).toBe(1);
-      expect(client.posts[0]?.text).toContain("Please send all screenshots (minimum 3 required).");
+      expect(client.posts[0]?.text).toContain("Please send all screenshots (minimum 2 required).");
     } finally {
       spyOn(global, "fetch").mockRestore();
     }
