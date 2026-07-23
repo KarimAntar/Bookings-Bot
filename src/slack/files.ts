@@ -20,7 +20,7 @@ export function selectImageFiles(
   if (files.length > maxCount) throw new Error(`At most ${maxCount} files are allowed`);
   return files.map((file) => {
     if (!file.id || !file.mimetype || !supportedTypes.has(file.mimetype)) {
-      throw new Error("Only PNG, JPEG, and WebP images are supported");
+      throw new Error(`Only PNG, JPEG, and WebP images are supported. Received: ${file.mimetype} (file: ${file.name})`);
     }
     if (typeof file.size === "number" && file.size > maxBytes) {
       throw new Error("Image exceeds the size limit");
@@ -40,7 +40,7 @@ export async function downloadSlackImage(
 ): Promise<ReviewImage> {
   const url = file.url_private_download ?? file.url_private;
   if (!url || !file.id || !file.mimetype || !supportedTypes.has(file.mimetype)) {
-    throw new Error("Invalid Slack image metadata");
+    throw new Error(`Only PNG, JPEG, and WebP images are supported. Received: ${file.mimetype} (file: ${file.name})`);
   }
   const data = await withTimeout(async (signal) => {
     const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal });
