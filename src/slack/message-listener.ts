@@ -158,6 +158,20 @@ export function registerMessageListener(
       if (reserved === undefined) return;
       revision = reserved;
     }
+    const addMessageReaction = async (name: string) => {
+      try {
+        await client.reactions.add({
+          channel: message.channel,
+          timestamp: message.ts,
+          name,
+        });
+      } catch (error) {
+        logger.debug(
+          { err: error, eventId, reaction: name },
+          "Slack reaction unavailable",
+        );
+      }
+    };
     const updateRootReaction = async (name: string) => {
       try {
         if (kind === "correction") {
@@ -189,7 +203,7 @@ export function registerMessageListener(
     };
     const pass = async () => {
       try {
-        await updateRootReaction("eyes");
+        await addMessageReaction("eyes");
         await queue.run(async () => {
           let result: ReviewResult;
           try {
