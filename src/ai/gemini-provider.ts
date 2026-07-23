@@ -37,7 +37,7 @@ export class GeminiProvider implements AIProvider {
     this.client = new GoogleGenAI({ apiKey });
   }
 
-  async review(request: ReviewRequest): Promise<ReviewResult> {
+  async review(request: ReviewRequest): Promise<unknown> {
     return withRetry(
       () => withTimeout(async (signal) => {
         let systemInstruction = BOOKING_REVIEW_POLICY;
@@ -63,11 +63,7 @@ export class GeminiProvider implements AIProvider {
           },
         });
         if (!response.text) throw new Error("Gemini returned an empty response");
-        let parsed = JSON.parse(response.text);
-        if (parsed.status === "correction_required" && parsed.failedRequirements && parsed.failedRequirements.length > 0) {
-          parsed.status = "rejected";
-        }
-        return ReviewResultSchema.parse(parsed);
+        return JSON.parse(response.text);
       }, this.timeoutMs),
       {
         maxAttempts: 3,

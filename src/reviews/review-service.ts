@@ -12,7 +12,26 @@ export class ReviewService {
 
   async review(request: ReviewRequest): Promise<ReviewResult> {
     try {
-      const result = ReviewResultSchema.parse(await this.provider.review(request));
+      let raw = await this.provider.review(request) as any;
+      if (typeof raw === "object" && raw !== null) {
+        const correctionFindings = (raw.mismatches?.length || 0) + (raw.missingNoteEntries?.length || 0) + (raw.missingEvidence?.length || 0);
+        const hasFailedReqs = (raw.failedRequirements?.length || 0) > 0;
+
+        if (raw.status === "approved" && hasFailedReqs) {
+          raw.status = "rejected";
+        } else if (raw.status === "approved" && correctionFindings > 0) {
+          raw.status = "correction_required";
+        } else if (raw.status === "correction_required" && hasFailedReqs) {
+          raw.status = "rejected";
+        } else if (raw.status === "correction_required" && correctionFindings === 0) {
+          raw.status = "needs_human_review";
+        } else if (raw.status === "rejected" && !hasFailedReqs) {
+          if (correctionFindings > 0) raw.status = "correction_required";
+          else raw.status = "needs_human_review";
+        }
+      }
+
+      const result = ReviewResultSchema.parse(raw);
       if (result.status !== "needs_human_review" && result.confidence < this.lowConfidenceThreshold) {
         return {
           ...result,
