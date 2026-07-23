@@ -14,6 +14,25 @@ export class ReviewService {
     try {
       let raw = await this.provider.review(request) as any;
       if (typeof raw === "object" && raw !== null) {
+        if (!Array.isArray(raw.flags)) {
+          raw.flags = ["safe_public_summary"];
+        } else {
+          const hasSafe = raw.flags.includes("safe_public_summary");
+          const hasUnsafe = raw.flags.includes("unsafe_public_output") || raw.flags.includes("unsafe_internal");
+
+          if (!hasSafe && !hasUnsafe) {
+            raw.flags.push("safe_public_summary");
+          } else if (hasUnsafe) {
+            raw.flags = raw.flags.filter((f: string) => f !== "unsafe_internal");
+            if (!raw.flags.includes("unsafe_public_output")) {
+              raw.flags.push("unsafe_public_output");
+            }
+            if (raw.status !== "needs_human_review") {
+              raw.status = "needs_human_review";
+            }
+          }
+        }
+
         const correctionFindings = (raw.mismatches?.length || 0) + (raw.missingNoteEntries?.length || 0) + (raw.missingEvidence?.length || 0);
         const hasFailedReqs = (raw.failedRequirements?.length || 0) > 0;
 
