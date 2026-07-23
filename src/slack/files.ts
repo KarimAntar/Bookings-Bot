@@ -19,8 +19,11 @@ export function selectImageFiles(
 ): SlackFile[] {
   if (files.length > maxCount) throw new Error(`At most ${maxCount} files are allowed`);
   return files.map((file) => {
-    if (!file.id || !file.mimetype || !supportedTypes.has(file.mimetype)) {
-      throw new Error(`Only PNG, JPEG, and WebP images are supported. Received: ${file.mimetype} (file: ${file.name})`);
+    if (!file.mimetype) {
+      throw new Error("Slack is still processing your upload or the file type is unknown. Please wait a moment and reply to this thread to try again.");
+    }
+    if (!file.id || !supportedTypes.has(file.mimetype)) {
+      throw new Error(`Only PNG, JPEG, and WebP images are supported. Received: ${file.mimetype} (file: ${file.name || 'unknown'})`);
     }
     if (typeof file.size === "number" && file.size > maxBytes) {
       throw new Error("Image exceeds the size limit");
