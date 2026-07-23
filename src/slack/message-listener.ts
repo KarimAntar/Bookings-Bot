@@ -158,11 +158,26 @@ export function registerMessageListener(
       if (reserved === undefined) return;
       revision = reserved;
     }
-    const reaction = async (name: string) => {
+    const updateRootReaction = async (name: string) => {
       try {
+        if (kind === "correction") {
+          for (const r of Object.values(terminalReaction)) {
+            if (r !== name) {
+              try {
+                await client.reactions.remove({
+                  channel: message.channel,
+                  timestamp: rootTs,
+                  name: r,
+                });
+              } catch (e) {
+                // Ignore errors removing old reactions
+              }
+            }
+          }
+        }
         await client.reactions.add({
           channel: message.channel,
-          timestamp: message.ts,
+          timestamp: rootTs,
           name,
         });
       } catch (error) {
@@ -174,7 +189,7 @@ export function registerMessageListener(
     };
     const pass = async () => {
       try {
-        await reaction("eyes");
+        await updateRootReaction("eyes");
         await queue.run(async () => {
           let result: ReviewResult;
           try {
@@ -313,7 +328,7 @@ export function registerMessageListener(
             thread_ts: rootTs,
             text: formatReviewResult(result),
           });
-          await reaction(terminalReaction[result.status]);
+          await updateRootReaction(terminalReaction[result.status]);
           if (
             result.status === "approved" ||
             result.status === "rejected" ||
@@ -333,7 +348,7 @@ export function registerMessageListener(
           thread_ts: rootTs,
           text: formatReviewResult(fallback),
         });
-        await reaction(terminalReaction.needs_human_review);
+        await updateRootReaction(terminalReaction.needs_human_review);
       }
     };
     const current = (threadPasses.get(threadKey) ?? Promise.resolve()).then(
