@@ -63,7 +63,11 @@ export class GeminiProvider implements AIProvider {
           },
         });
         if (!response.text) throw new Error("Gemini returned an empty response");
-        return ReviewResultSchema.parse(JSON.parse(response.text));
+        let parsed = JSON.parse(response.text);
+        if (parsed.status === "correction_required" && parsed.failedRequirements && parsed.failedRequirements.length > 0) {
+          parsed.status = "rejected";
+        }
+        return ReviewResultSchema.parse(parsed);
       }, this.timeoutMs),
       {
         maxAttempts: 3,
