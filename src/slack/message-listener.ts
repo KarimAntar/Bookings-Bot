@@ -203,6 +203,25 @@ export function registerMessageListener(
     };
     const pass = async () => {
       try {
+        if (message.files?.some((f) => !f.mimetype)) {
+          await new Promise((r) => setTimeout(r, 2000));
+          try {
+            const history = await client.conversations.history({
+              channel: message.channel,
+              latest: message.ts,
+              limit: 1,
+              inclusive: true,
+            });
+            if (history.messages && history.messages.length > 0) {
+              const updatedMessage = history.messages[0] as SlackMessage;
+              if (updatedMessage.files) {
+                message.files = updatedMessage.files;
+              }
+            }
+          } catch (err) {
+            logger.debug({ err, channel: message.channel, ts: message.ts }, "Failed to fetch updated message for file info");
+          }
+        }
         await addMessageReaction("eyes");
         await queue.run(async () => {
           let result: ReviewResult;
