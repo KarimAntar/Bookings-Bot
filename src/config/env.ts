@@ -20,7 +20,7 @@ const EnvSchema = z.object({
   GEMINI_MODEL: z.string().trim().min(1).default("gemini-3.5-flash-lite"),
   ALLOWED_CHANNEL_IDS: z.string().default(""),
   MAX_IMAGE_BYTES: integer(1, 25 * 1024 * 1024).default(8_388_608),
-  MAX_ATTACHMENTS: integer(1, 20).default(4),
+  MAX_ATTACHMENTS: integer(1, 20).default(10),
   DOWNLOAD_TIMEOUT_MS: integer(1_000, 300_000).default(15_000),
   AI_TIMEOUT_MS: integer(1_000, 300_000).default(45_000),
   MAX_CONCURRENT_REVIEWS: integer(1, 100).default(2),

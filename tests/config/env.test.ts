@@ -18,7 +18,7 @@ describe("parseEnv", () => {
       geminiModel: "gemini-3.5-flash-lite",
       allowedChannelIds: new Set(),
       maxImageBytes: 8_388_608,
-      maxAttachments: 4,
+      maxAttachments: 10,
       downloadTimeoutMs: 15_000,
       aiTimeoutMs: 45_000,
       maxConcurrentReviews: 2,

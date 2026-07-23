@@ -33,7 +33,7 @@ Bun builds the TypeScript application, while Node runs Slack Socket Mode because
 
 ## Booking review flow
 
-Every top-level message with one to four PNG, JPEG, or WebP screenshots starts a review, regardless of its caption, mentions, or test wording. Submit the available CRM prospect, campaign requirements/script, qualification-question indicator and answers, completed booking form, and booking notes as one package. Gemini classifies every image and compares CRM-authoritative prospect values with the booking while applying campaign-authoritative thresholds and script-defined note requirements.
+Every top-level message with one to ten PNG, JPEG, or WebP screenshots starts a review, regardless of its caption, mentions, or test wording. Submit the available CRM prospect, campaign requirements/script, qualification-question indicator and answers, completed booking form, and booking notes as one package. Gemini classifies every image and compares CRM-authoritative prospect values with the booking while applying campaign-authoritative thresholds and script-defined note requirements.
 
 Correctable mismatches or omissions receive an actionable `Correction required` reply. Reply in that same thread with text and/or replacement screenshots; the bot re-reviews the retained original package plus only the latest correction. Approved and rejected sessions close. Correction and human-review sessions remain active for `ACTIVE_REVIEW_TTL_MS`, subject to `MAX_ACTIVE_REVIEWS` capacity. This state is process memory only, so after a service restart submit a new top-level package.
 
