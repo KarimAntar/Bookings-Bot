@@ -55,9 +55,23 @@ export class ReviewThreadStore {
     this.prune(); const key = this.key(channel, rootTs); const stored = this.sessions.get(key); if (!stored) return undefined;
     if (revision !== undefined && revision !== stored.revision) return undefined;
     validateImages(correction.images, "correction");
-    const originalIds = new Set(stored.originalImages.map((image) => image.id));
-    if (correction.images.some((image) => originalIds.has(image.id))) throw new Error("Correction image IDs must be unique");
-    const now = this.now(); stored.latestCorrection = correction; stored.lastEventId = correction.eventId; if (revision === undefined) stored.revision++; stored.expiresAt = now + this.ttlMs; stored.updatedAt = now;
+
+    // We append the new correction instead of replacing the previous one, so consecutive replies in a thread accumulate.
+    if (!stored.latestCorrection) {
+      stored.latestCorrection = correction;
+    } else {
+      const combinedImages = [...stored.latestCorrection.images];
+      for (const img of correction.images) {
+        combinedImages.push(img);
+      }
+      stored.latestCorrection = {
+        text: stored.latestCorrection.text ? `${stored.latestCorrection.text}\n\nCorrection context:\n${correction.text}` : correction.text,
+        images: combinedImages,
+        eventId: correction.eventId
+      };
+    }
+
+    const now = this.now(); stored.lastEventId = correction.eventId; if (revision === undefined) stored.revision++; stored.expiresAt = now + this.ttlMs; stored.updatedAt = now;
     return this.get(channel, rootTs);
   }
   close(channel: string, rootTs: string): void { this.sessions.delete(this.key(channel, rootTs)); }
