@@ -293,18 +293,18 @@ export function registerMessageListener(
                 flags: ["safe_public_summary"],
               };
             } else {
+              let progressMessagePromise: Promise<any> | undefined;
               let progressMessageTs: string | undefined;
-              const timer = setTimeout(async () => {
-                try {
-                  const res = await client.chat.postMessage({
-                    channel: message.channel,
-                    thread_ts: rootTs,
-                    text: "Give me just a few more seconds, I'm still looking over these screenshots... 🧐",
-                  });
+              const timer = setTimeout(() => {
+                progressMessagePromise = client.chat.postMessage({
+                  channel: message.channel,
+                  thread_ts: rootTs,
+                  text: "Give me just a few more seconds, I'm still looking over these screenshots... 🧐",
+                }).then(res => {
                   progressMessageTs = res.ts;
-                } catch (err) {
+                }).catch(err => {
                   logger.debug({ err, channel: message.channel, rootTs }, "Failed to post progress message");
-                }
+                });
               }, 4000);
 
               try {
@@ -315,14 +315,17 @@ export function registerMessageListener(
                 });
               } finally {
                 clearTimeout(timer);
-                if (progressMessageTs) {
-                  try {
-                    await client.chat.delete({
-                      channel: message.channel,
-                      ts: progressMessageTs,
-                    });
-                  } catch (err) {
-                    logger.debug({ err, channel: message.channel, ts: progressMessageTs }, "Failed to delete progress message");
+                if (progressMessagePromise) {
+                  await progressMessagePromise; // wait for it to finish posting before deleting
+                  if (progressMessageTs) {
+                    try {
+                      await client.chat.delete({
+                        channel: message.channel,
+                        ts: progressMessageTs,
+                      });
+                    } catch (err) {
+                      logger.debug({ err, channel: message.channel, ts: progressMessageTs }, "Failed to delete progress message");
+                    }
                   }
                 }
               }
