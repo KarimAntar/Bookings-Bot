@@ -231,16 +231,21 @@ export function registerMessageListener(
               config.maxAttachments,
               config.maxImageBytes,
             );
-            const downloaded = await Promise.all(
-              files.map((file) =>
-                downloadSlackImage(
+            const downloaded: any[] = [];
+            let downloadError: Error | undefined;
+            for (const file of files) {
+              try {
+                const img = await downloadSlackImage(
                   file,
                   config.slackBotToken,
                   config.maxImageBytes,
                   config.downloadTimeoutMs,
-                ),
-              ),
-            );
+                );
+                downloaded.push(img);
+              } catch (e) {
+                downloadError = e as Error;
+              }
+            }
             const source =
               kind === "root" ? ("original" as const) : ("correction" as const);
             const images = downloaded.map((image) => ({
@@ -263,6 +268,7 @@ export function registerMessageListener(
                     revision,
                   );
             if (!session || session.revision !== revision) return;
+            if (downloadError) throw downloadError;
             if (session.evidence.images.length < 2) {
               result = {
                 status: "correction_required",
