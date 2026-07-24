@@ -4,11 +4,11 @@ import {
   humanReviewFallback,
   type ReviewResult,
 } from "../domain/review-result";
-import { DedupeCache } from "../runtime/dedupe-cache";
-import { BoundedSemaphore } from "../runtime/semaphore";
 import type { ReviewService } from "../reviews/review-service";
 import type { RuleManager } from "../rules/rule-manager";
-import { downloadSlackImage, selectImageFiles, type SlackFile } from "./files";
+import { DedupeCache } from "../runtime/dedupe-cache";
+import { BoundedSemaphore } from "../runtime/semaphore";
+import { downloadSlackImage, type SlackFile, selectImageFiles } from "./files";
 import { formatReviewResult, terminalReaction } from "./format";
 import { ReviewThreadStore } from "./review-thread-store";
 
@@ -108,7 +108,13 @@ export function registerMessageListener(
             });
           } catch (error) {
             logger.error(
-              { err: error instanceof Error ? { message: error.message, stack: error.stack } : error, channel: message.channel },
+              {
+                err:
+                  error instanceof Error
+                    ? { message: error.message, stack: error.stack }
+                    : error,
+                channel: message.channel,
+              },
               "Rule manager failed",
             );
             await client.chat.postMessage({
@@ -219,7 +225,10 @@ export function registerMessageListener(
               }
             }
           } catch (err) {
-            logger.debug({ err, channel: message.channel, ts: message.ts }, "Failed to fetch updated message for file info");
+            logger.debug(
+              { err, channel: message.channel, ts: message.ts },
+              "Failed to fetch updated message for file info",
+            );
           }
         }
         await addMessageReaction("eyes");
@@ -296,15 +305,21 @@ export function registerMessageListener(
               let progressMessagePromise: Promise<any> | undefined;
               let progressMessageTs: string | undefined;
               const timer = setTimeout(() => {
-                progressMessagePromise = client.chat.postMessage({
-                  channel: message.channel,
-                  thread_ts: rootTs,
-                  text: "Give me just a few more seconds, I'm still looking over these screenshots... 🧐",
-                }).then(res => {
-                  progressMessageTs = res.ts;
-                }).catch(err => {
-                  logger.debug({ err, channel: message.channel, rootTs }, "Failed to post progress message");
-                });
+                progressMessagePromise = client.chat
+                  .postMessage({
+                    channel: message.channel,
+                    thread_ts: rootTs,
+                    text: "Give me just a few more seconds, I'm still looking over these screenshots... 🧐",
+                  })
+                  .then((res) => {
+                    progressMessageTs = res.ts;
+                  })
+                  .catch((err) => {
+                    logger.debug(
+                      { err, channel: message.channel, rootTs },
+                      "Failed to post progress message",
+                    );
+                  });
               }, 4000);
 
               try {
@@ -324,16 +339,31 @@ export function registerMessageListener(
                         ts: progressMessageTs,
                       });
                     } catch (err) {
-                      logger.debug({ err, channel: message.channel, ts: progressMessageTs }, "Failed to delete progress message");
+                      logger.debug(
+                        {
+                          err,
+                          channel: message.channel,
+                          ts: progressMessageTs,
+                        },
+                        "Failed to delete progress message",
+                      );
                     }
                   }
                 }
               }
             }
           } catch (error) {
-            
             logger.error(
-              { err: error instanceof Error ? { message: error.message, stack: error.stack } : error, eventId, channel: message.channel, rootTs, kind },
+              {
+                err:
+                  error instanceof Error
+                    ? { message: error.message, stack: error.stack }
+                    : error,
+                eventId,
+                channel: message.channel,
+                rootTs,
+                kind,
+              },
               "Slack submission processing failed",
             );
             if (
@@ -344,9 +374,11 @@ export function registerMessageListener(
                 error.message.includes("download") ||
                 error.message.includes("metadata"))
             ) {
-              const reasoning = error.message.includes("download") || error.message.includes("metadata")
-                ? "One of the images could not be downloaded. Please re-upload it."
-                : error.message;
+              const reasoning =
+                error.message.includes("download") ||
+                error.message.includes("metadata")
+                  ? "One of the images could not be downloaded. Please re-upload it."
+                  : error.message;
               result = {
                 status: "correction_required",
                 reasoning: reasoning,
@@ -388,7 +420,15 @@ export function registerMessageListener(
         });
       } catch (error) {
         logger.warn(
-          { err: error instanceof Error ? { message: error.message, stack: error.stack } : error, eventId, channel: message.channel, rootTs },
+          {
+            err:
+              error instanceof Error
+                ? { message: error.message, stack: error.stack }
+                : error,
+            eventId,
+            channel: message.channel,
+            rootTs,
+          },
           "Review queue rejected submission",
         );
         const fallback = humanReviewFallback("review_queue_unavailable");

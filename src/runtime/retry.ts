@@ -10,7 +10,10 @@ export async function withTimeout<T>(
   timeoutMs: number,
 ): Promise<T> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(new TimeoutError(timeoutMs)), timeoutMs);
+  const timer = setTimeout(
+    () => controller.abort(new TimeoutError(timeoutMs)),
+    timeoutMs,
+  );
   try {
     return await operation(controller.signal);
   } finally {
@@ -30,9 +33,11 @@ export async function withRetry<T>(
     try {
       return await operation(attempt);
     } catch (error) {
-      if (attempt >= options.maxAttempts || !options.shouldRetry(error)) throw error;
+      if (attempt >= options.maxAttempts || !options.shouldRetry(error))
+        throw error;
       const base = options.baseDelayMs ?? 500;
-      const delay = base * 2 ** (attempt - 1) + Math.floor(Math.random() * base);
+      const delay =
+        base * 2 ** (attempt - 1) + Math.floor(Math.random() * base);
       await Bun.sleep(delay);
     }
   }

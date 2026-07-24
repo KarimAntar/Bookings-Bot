@@ -1,4 +1,4 @@
-import { expect, test, describe, beforeEach, afterEach } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { promises as fs } from "fs";
 import { RuleStore } from "../../src/rules/rule-store";
 
@@ -6,7 +6,9 @@ describe("RuleStore", () => {
   const filepath = "./test-rules.json";
 
   afterEach(async () => {
-    try { await fs.unlink(filepath); } catch {}
+    try {
+      await fs.unlink(filepath);
+    } catch {}
   });
 
   test("returns empty array if file does not exist", async () => {
@@ -53,7 +55,7 @@ describe("RuleStore", () => {
   test("adds rules concurrently without data loss", async () => {
     const store = new RuleStore(filepath);
     const rules = Array.from({ length: 10 }, (_, i) => "Rule ${i}");
-    await Promise.all(rules.map(rule => store.addRule(rule)));
+    await Promise.all(rules.map((rule) => store.addRule(rule)));
     const savedRules = await store.getRules();
     expect(savedRules).toHaveLength(10);
   });

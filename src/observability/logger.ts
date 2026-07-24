@@ -17,7 +17,11 @@ function redactSensitiveValues(
 ): unknown {
   if (value === null || typeof value !== "object") return value;
   if (seen.has(value)) return seen.get(value);
-  if (Buffer.isBuffer(value) || value instanceof Date || value instanceof Error) {
+  if (
+    Buffer.isBuffer(value) ||
+    value instanceof Date ||
+    value instanceof Error
+  ) {
     return value;
   }
 

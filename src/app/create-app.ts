@@ -1,12 +1,12 @@
 import { App, LogLevel, type Logger as SlackLogger } from "@slack/bolt";
-import type { AppConfig } from "../config/env";
 import { GeminiProvider } from "../ai/gemini-provider";
+import type { AppConfig } from "../config/env";
 import { createLogger } from "../observability/logger";
 import { ReviewService } from "../reviews/review-service";
+import { RuleManager } from "../rules/rule-manager";
+import { RuleStore } from "../rules/rule-store";
 import { registerMessageListener } from "../slack/message-listener";
 import { ReviewThreadStore } from "../slack/review-thread-store";
-import { RuleStore } from "../rules/rule-store";
-import { RuleManager } from "../rules/rule-manager";
 
 export function createApp(config: AppConfig): App {
   const logger = createLogger(config.logLevel);
@@ -26,11 +26,36 @@ export function createApp(config: AppConfig): App {
     logger: slackLogger,
   });
   const ruleStore = new RuleStore(config.rulesFilePath);
-  const ruleManager = new RuleManager(config.geminiApiKey, config.geminiModel, ruleStore);
-  const provider = new GeminiProvider(config.geminiApiKey, config.geminiModel, config.aiTimeoutMs, ruleStore);
-  const service = new ReviewService(provider, config.lowConfidenceThreshold, logger);
-  const reviewThreadStore = new ReviewThreadStore(config.maxActiveReviews, config.activeReviewTtlMs);
-  registerMessageListener(app, config, service, slackLogger, reviewThreadStore, ruleManager);
-  app.error(async (error) => logger.error({ err: error }, "Unhandled Slack application error"));
+  const ruleManager = new RuleManager(
+    config.geminiApiKey,
+    config.geminiModel,
+    ruleStore,
+  );
+  const provider = new GeminiProvider(
+    config.geminiApiKey,
+    config.geminiModel,
+    config.aiTimeoutMs,
+    ruleStore,
+  );
+  const service = new ReviewService(
+    provider,
+    config.lowConfidenceThreshold,
+    logger,
+  );
+  const reviewThreadStore = new ReviewThreadStore(
+    config.maxActiveReviews,
+    config.activeReviewTtlMs,
+  );
+  registerMessageListener(
+    app,
+    config,
+    service,
+    slackLogger,
+    reviewThreadStore,
+    ruleManager,
+  );
+  app.error(async (error) =>
+    logger.error({ err: error }, "Unhandled Slack application error"),
+  );
   return app;
 }

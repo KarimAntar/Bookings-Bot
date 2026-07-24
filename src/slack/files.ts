@@ -17,13 +17,18 @@ export function selectImageFiles(
   maxCount: number,
   maxBytes: number,
 ): SlackFile[] {
-  if (files.length > maxCount) throw new Error(`At most ${maxCount} files are allowed`);
+  if (files.length > maxCount)
+    throw new Error(`At most ${maxCount} files are allowed`);
   return files.map((file) => {
     if (!file.mimetype) {
-      throw new Error("Slack is still processing your upload or the file type is unknown. Please wait a moment and reply to this thread to try again.");
+      throw new Error(
+        "Slack is still processing your upload or the file type is unknown. Please wait a moment and reply to this thread to try again.",
+      );
     }
     if (!file.id || !supportedTypes.has(file.mimetype)) {
-      throw new Error(`Only PNG, JPEG, and WebP images are supported. Received: ${file.mimetype} (file: ${file.name || 'unknown'})`);
+      throw new Error(
+        `Only PNG, JPEG, and WebP images are supported. Received: ${file.mimetype} (file: ${file.name || "unknown"})`,
+      );
     }
     if (typeof file.size === "number" && file.size > maxBytes) {
       throw new Error("Image exceeds the size limit");
@@ -42,12 +47,23 @@ export async function downloadSlackImage(
   timeoutMs: number,
 ): Promise<ReviewImage> {
   const url = file.url_private_download ?? file.url_private;
-  if (!url || !file.id || !file.mimetype || !supportedTypes.has(file.mimetype)) {
-    throw new Error(`Only PNG, JPEG, and WebP images are supported. Received: ${file.mimetype} (file: ${file.name})`);
+  if (
+    !url ||
+    !file.id ||
+    !file.mimetype ||
+    !supportedTypes.has(file.mimetype)
+  ) {
+    throw new Error(
+      `Only PNG, JPEG, and WebP images are supported. Received: ${file.mimetype} (file: ${file.name})`,
+    );
   }
   const data = await withTimeout(async (signal) => {
-    const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal });
-    if (!response.ok || !response.body) throw new Error(`Slack download failed with ${response.status}`);
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal,
+    });
+    if (!response.ok || !response.body)
+      throw new Error(`Slack download failed with ${response.status}`);
     const reader = response.body.getReader();
     const chunks: Uint8Array[] = [];
     let total = 0;

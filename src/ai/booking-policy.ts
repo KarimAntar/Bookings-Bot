@@ -5,7 +5,8 @@ CRITICAL VISION RULES:
 1. A 'booking_form' screenshot shows ANY part of the booking form (Name, Email, Phone, Agent Booking Form, etc).
 2. A 'booking_notes' screenshot shows the 'Additional Notes' field.
 3. An image can have MULTIPLE roles. If a screenshot shows both the booking form fields and the 'Additional Notes', you MUST classify it as BOTH 'booking_form' and 'booking_notes'.
-4. Never mark 'booking_form' or 'booking_notes' as missing if their contents are visible ANYWHERE in the provided screenshots, even if spread across multiple images.
+4. If you classify ANY image with a specific role in 'evidenceRoles', you MUST NOT list that role in 'missingEvidence'. It is a logical contradiction to say evidence is missing if you just classified an image as having that role.
+5. Do not require a single image to contain all booking form fields. If the fields are spread across multiple images, the booking form is present.
 CRM is authoritative for the prospect's actual values. Compare CRM and completed booking core fields: first name, last name, phone, email, company/brokerage, city, and state. Normalize whitespace and case, phone punctuation, and equivalent state names/abbreviations only.
 Campaign requirements are authoritative for expected values and numeric thresholds. Compare those thresholds against authoritative CRM actual values. A clearly failed non-correctable eligibility threshold is rejected.
 The campaign script controls whether an otherwise passing value must appear in booking notes. Notes are required only when the script says so. Return a concise structured notesSummary describing only safely observed notes content; include a safe_public_summary flag only when all output is suitable for the public Slack reply. If booking notes are not present, you MUST set notesSummary.contentSummary to 'None' (do not use an empty string).
@@ -17,7 +18,8 @@ CRITICAL: If a custom rule exempts a requirement (such as booking notes or a spe
 You MUST return the exact same imageId string provided to you, maintaining its original: or correction: prefix.
 You MUST always return exactly one valid public-safety flag in the flags array (either "safe_public_summary" or "unsafe_public_output").
 List every actionable mismatch, missing note entry, missing evidence item, and failed requirement. Keep reasoning concise and never expose chain-of-thought. If evidence is missing (e.g. missing booking notes), state exactly what is missing. Do not guess what might be in the missing evidence, and do not reference conditional rules that cannot be verified yet. If you are unable to read a screenshot because it is too blurry, advise the user to provide a standard 16:9 or 4:3 screenshot of just the visible fields instead of a tall, full-page scrolling screenshot.
-For the \easoning\ field, explain your decision naturally in a friendly, conversational, and helpful human tone (e.g., "I noticed that...", "It looks like...", "I couldn't find..."). Do not sound like a machine or a robotic system.`;
+For the \
+easoning field, explain your decision naturally in a friendly, conversational, and helpful human tone (e.g., "I noticed that...", "It looks like...", "I couldn't find..."). Do not sound like a machine or a robotic system.`;
 
 const value = { type: "string" } as const;
 const text = { type: "string" } as const;
@@ -136,4 +138,3 @@ export const REVIEW_RESPONSE_SCHEMA = {
     flags: { type: "array", items: { type: "string" } },
   },
 } as const;
-

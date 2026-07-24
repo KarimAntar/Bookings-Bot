@@ -8,9 +8,9 @@ export class RuleStore {
 
   private async ensureDir(): Promise<void> {
     const dir = path.dirname(this.filepath);
-    if (dir !== '.' && dir !== '') {
+    if (dir !== "." && dir !== "") {
       await fs.mkdir(dir, { recursive: true }).catch((err) => {
-        if (err.code !== 'EEXIST') throw err;
+        if (err.code !== "EEXIST") throw err;
       });
     }
   }
