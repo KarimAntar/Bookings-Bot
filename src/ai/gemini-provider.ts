@@ -13,6 +13,19 @@ function statusCode(error: unknown): number | undefined {
   return typeof value === "number" ? value : typeof value === "string" ? Number(value) : undefined;
 }
 
+function getFifthBusinessDay(startDate: Date): Date {
+  let count = 1; // Today is day 1
+  const date = new Date(startDate);
+  while (count < 5) {
+    date.setDate(date.getDate() + 1);
+    const day = date.getDay();
+    if (day !== 0 && day !== 6) { // 0 is Sunday, 6 is Saturday
+      count++;
+    }
+  }
+  return date;
+}
+
 type GeminiPart = { text: string } | { inlineData: { mimeType: string; data: string } };
 export function buildGeminiParts(request: ReviewRequest): GeminiPart[] {
   const images = [...request.images].sort((left, right) => (left.source === right.source ? 0 : left.source === "original" ? -1 : 1));
@@ -40,8 +53,11 @@ export class GeminiProvider implements AIProvider {
   async review(request: ReviewRequest): Promise<unknown> {
     return withRetry(
       () => withTimeout(async (signal) => {
-        const currentDateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        let systemInstruction = `Current Date: ${currentDateStr}\n\n${BOOKING_REVIEW_POLICY}`;
+        const today = new Date();
+        const deadline = getFifthBusinessDay(today);
+        const currentDateStr = today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const deadlineStr = deadline.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        let systemInstruction = `Current Date: ${currentDateStr} (Day 1)\nStrict Booking Deadline (5th business day): ${deadlineStr}\n\n${BOOKING_REVIEW_POLICY}`;
         if (this.ruleStore) {
           const rules = await this.ruleStore.getRules();
           if (rules.length > 0) {
